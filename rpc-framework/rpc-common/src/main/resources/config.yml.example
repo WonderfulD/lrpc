@@ -1,0 +1,10 @@
+redis:
+  address:
+  password:
+  database:
+  connectionMinimumIdleSize: 5
+  connectionPoolSize: 15
+  connectTimeout: 10000
+  timeout: 5000
+  retryAttempts: 3
+  retryInterval: 1500
