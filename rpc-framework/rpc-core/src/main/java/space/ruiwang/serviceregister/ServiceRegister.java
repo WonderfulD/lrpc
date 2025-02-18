@@ -1,5 +1,6 @@
 package space.ruiwang.serviceregister;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -8,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.reflections.Reflections;
 
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.references.RpcService;
+import space.ruiwang.annotation.RpcService;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -24,17 +25,30 @@ public interface ServiceRegister {
 
     // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
     static void serviceImplRegister() throws Exception {
-        // 扫描指定包下所有标注了 @RpcService 的类
         Reflections reflections = new Reflections("space.ruiwang.serviceimpl");
         Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(RpcService.class);
+
         for (Class<?> implClass : annotatedClasses) {
             RpcService annotation = implClass.getAnnotation(RpcService.class);
-            Class<?> serviceInterface = annotation.value();  // 获取实现的接口
+
+            // 获取声明要注册的接口
+            Class<?> serviceInterface = annotation.value();
+
+            // 如果value是默认值（void.class），则自动获取第一个接口
+            if (serviceInterface == void.class) {
+                Class<?>[] interfaces = implClass.getInterfaces();
+                if (interfaces.length == 0) {
+                    throw new IllegalStateException(implClass.getName() + " 未实现任何接口");
+                }
+                serviceInterface = interfaces[0]; // 取第一个接口
+            }
+
+            // 实例化并注册服务
             try {
                 Object instance = implClass.getDeclaredConstructor().newInstance();
                 SERVICE_MAP.put(serviceInterface.getName(), instance);
-            } catch (Exception e) {
-                throw new Exception("接口实现类注册失败");
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new Exception("接口实现类注册失败: " + implClass.getName(), e);
             }
         }
     }

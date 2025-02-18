@@ -6,9 +6,9 @@ import java.lang.reflect.Proxy;
 import java.util.ServiceLoader;
 
 import lombok.extern.slf4j.Slf4j;
+import space.ruiwang.consumer.RpcConsumer;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
-import space.ruiwang.consumer.RpcConsumer;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
