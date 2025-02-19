@@ -6,10 +6,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import lombok.extern.slf4j.Slf4j;
+import space.ruiwang.consumer.RpcConsumer;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.consumer.RpcConsumer;
 import space.ruiwang.servicefinder.ServiceFinder;
 import space.ruiwang.servicefinder.impl.ServiceFinderImpl;
 import space.ruiwang.serviceregister.impl.LocalServiceRegister;
@@ -24,13 +24,21 @@ import space.ruiwang.utils.KryoSerializer;
 @Slf4j
 public class SimpleHttpClient implements RpcConsumer {
     @Override
-    public RpcResponseDO send(RpcRequestDO rpcRequestDO) {
-        // 获取具体服务
-        ServiceFinder serviceFinder = new ServiceFinderImpl(new LocalServiceRegister(), new RemoteServiceRegister());
-        ServiceRegisterDO selectedService =
-                serviceFinder.selectService(rpcRequestDO.getServiceName(), rpcRequestDO.getServiceVersion());
-        String hostName = selectedService.getServiceAddr();
-        int port = selectedService.getPort();
+    public RpcResponseDO send(RpcRequestDO rpcRequestDO, String loadBalancerType, long retryCount, long timeout, String tolerant) {
+        String hostName = null;
+        int port = 0;
+        try {
+            // 获取具体服务
+            ServiceFinder serviceFinder = new ServiceFinderImpl(new LocalServiceRegister(), new RemoteServiceRegister());
+            ServiceRegisterDO selectedService =
+                    serviceFinder.selectService(rpcRequestDO.getServiceName(), rpcRequestDO.getServiceVersion(), loadBalancerType);
+            hostName = selectedService.getServiceAddr();
+            port = selectedService.getPort();
+        } catch (Exception e) {
+            // TODO 结合重试机制抛出有message的Exception
+            log.error("rpc请求失败，错误信息:[{}]", e.getMessage());
+            return RpcResponseDO.error("Rpc调用失败，无法找到实例");
+        }
 
         try {
             URL url = new URL("http", hostName, port, "/");

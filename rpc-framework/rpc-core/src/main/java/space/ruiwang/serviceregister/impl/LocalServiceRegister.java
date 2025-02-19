@@ -56,10 +56,10 @@ public class LocalServiceRegister implements ServiceRegister {
 
             serviceList.add(serviceRegisterDO);
 
-            log.info("本地注册中心：服务 [{}] 注册信息 [{}] 成功", key, serviceRegisterDO);
+            log.info("本地注册中心：服务注册成功。服务名: [{}]， 注册信息: [{}]", key, serviceRegisterDO);
             return true;
         } catch (Exception e) {
-            log.error("本地注册中心：注册 [{}] 时发生异常: {}", serviceRegisterDO.getServiceName(), e.getMessage());
+            log.error("本地注册中心：注册服务时发生异常。服务名: [{}], 异常信息: [{}]", serviceRegisterDO.getServiceName(), e.getMessage());
             return false;
         }
     }
@@ -97,16 +97,16 @@ public class LocalServiceRegister implements ServiceRegister {
                     LOCAL_REGISTRATION.remove(key);
                 }
 
-                log.info("本地注册中心：服务 [{}] 下线信息 [{}], 移除结果: {}",
+                log.info("本地注册中心：服务下线完成。服务 [{}] 下线信息 [{}], 移除结果: {}",
                         key, serviceRegisterDO, removed);
 
                 return removed;
             } else {
-                log.warn("本地注册中心：尝试下线 [{}] 时未找到对应的ServiceRegisterDO列表", key);
+                log.warn("本地注册中心：服务下线失败。尝试下线 [{}] 时未找到对应的ServiceRegisterDO列表", key);
                 return false;
             }
         } catch (Exception e) {
-            log.error("本地注册中心：下线 [{}] 时发生异常: {}", serviceRegisterDO.getServiceName(), e.getMessage());
+            log.error("本地注册中心：服务下线时发生异常。服务名: [{}], 异常信息: [{}]", serviceRegisterDO.getServiceName(), e.getMessage());
             return false;
         }
     }

@@ -1,23 +1,30 @@
 package space.ruiwang.controller;
 
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
 import space.ruiwang.annotation.RpcReference;
+import space.ruiwang.loadbalance.LoadBalancerStrategies;
 import space.ruiwang.service.TestService;
+import space.ruiwang.utils.AjaxResult;
 
 
 @RestController
+@RequestMapping("/test")
 public class TestController {
 
-    @RpcReference
+    @RpcReference(serviceVersion = "1.0", loadBalancer = LoadBalancerStrategies.RANDOM)
     private TestService testService;
 
-    @RequestMapping("test/{a}/{b}")
-    public String test(@PathVariable Integer a, @PathVariable Integer b) {
-        return testService.calc(a, b);
+    @PostMapping("/calc")
+    public AjaxResult test(Integer a, Integer b) {
+        try {
+            String result = testService.calc(a, b);
+            return AjaxResult.success(result);
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
     }
 
 }

@@ -1,11 +1,12 @@
 package space.ruiwang.servicefinder.impl;
 
+import java.lang.reflect.Constructor;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.loadbalance.LoadBalancer;
-import space.ruiwang.loadbalance.impl.LoadBalancerImpl;
+import space.ruiwang.loadbalance.impl.RandomLoadBalancer;
 import space.ruiwang.servicefinder.ServiceFinder;
 import space.ruiwang.serviceregister.impl.LocalServiceRegister;
 import space.ruiwang.serviceregister.impl.RemoteServiceRegister;
@@ -28,16 +29,35 @@ public class ServiceFinderImpl implements ServiceFinder {
     }
 
     /**
+     * 根据服务名和服务版本号查找具体执行方法的服务
+     * @param serviceName 服务名
+     * @param serviceVersion 服务版本号
+     * @return 具体执行方法的服务，找不到则返回null
+     */
+    @Override
+    public ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType) {
+        List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
+        return selectService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
+    }
+
+    /**
      * 从所有可用服务中获取具体执行方法的服务
      * @param availableServices 所有可用服务
      * @return
      */
-    private static ServiceRegisterDO selectService(List<ServiceRegisterDO> availableServices) {
+    private static ServiceRegisterDO selectService(String serviceName, String serviceVersion, List<ServiceRegisterDO> availableServices,
+            String loadBalancerType) {
         // 负载均衡
-        LoadBalancer loadBalancer = new LoadBalancerImpl();
+        LoadBalancer loadBalancer;
+        try {
+            Class<?> clazz = Class.forName(loadBalancerType);
+            Constructor<?> constructor = clazz.getDeclaredConstructor(String.class, String.class);
+            loadBalancer = (LoadBalancer) constructor.newInstance(serviceName, serviceVersion);
+        } catch (Exception e) {
+            log.error("未找到负载均衡器，退化到RandomLoadBalancer, loadBalancerType={}", loadBalancerType);
+            loadBalancer = new RandomLoadBalancer(serviceName, serviceVersion);
+        }
         return loadBalancer.selectService(availableServices);
-        // 模拟
-//        return new ServiceRegisterDO("space.ruiwang.service.TestService", "1.0", "localhost", 8091, 1L);
     }
 
     /**
@@ -72,15 +92,4 @@ public class ServiceFinderImpl implements ServiceFinder {
         return null;
     }
 
-    /**
-     * 根据服务名和服务版本号查找具体执行方法的服务
-     * @param serviceName 服务名
-     * @param serviceVersion 服务版本号
-     * @return 具体执行方法的服务，找不到则返回null
-     */
-    @Override
-    public ServiceRegisterDO selectService(String serviceName, String serviceVersion) {
-        List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
-        return selectService(allAvailableServices);
-    }
 }

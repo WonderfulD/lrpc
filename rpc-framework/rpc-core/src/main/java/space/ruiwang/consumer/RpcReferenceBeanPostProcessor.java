@@ -22,13 +22,20 @@ public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
         Class<?> beanClass = bean.getClass();
         // 检查类中的字段是否有 @RpcReference 注解
         for (Field field : beanClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(RpcReference.class)) {
+            RpcReference rpcReference = field.getAnnotation(RpcReference.class);
+            if (rpcReference != null) {
+                String serviceVersion = rpcReference.serviceVersion();
+                String loadBalancerType = rpcReference.loadBalancer();
+                long retryCount = rpcReference.retryCount();
+                long timeout = rpcReference.timeout();
+                String tolerant = rpcReference.tolerant();
+
                 // 获取代理对象并注入
-                Object proxy = ProxyFactory.getProxy(field.getType());
+                Object proxy = ProxyFactory.getProxy(field.getType(), serviceVersion, loadBalancerType, retryCount, timeout, tolerant);
                 field.setAccessible(true);
                 try {
                     field.set(bean, proxy);
-                    log.info("field: {} 注入成功", field.getName());
+                    log.info("field: {} 注入成功，rpcReference参数：{}", field.getName(), rpcReference);
                 } catch (IllegalAccessException e) {
                     log.error("field: {} 注入失败", field.getName(), e);
                 }

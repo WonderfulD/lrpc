@@ -43,7 +43,7 @@ public class HttpServletHandler {
             Object result = method.invoke(serviceClass, parameters);
 
             // 封装为RpcResponseDO
-            RpcResponseDO rpcResponseDO = new RpcResponseDO("调用成功", result);
+            RpcResponseDO rpcResponseDO = RpcResponseDO.success(result);
 
             // 序列化结果
             byte[] rpcResponse = KryoSerializer.serialize(rpcResponseDO);

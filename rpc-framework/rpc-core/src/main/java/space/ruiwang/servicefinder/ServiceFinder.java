@@ -11,5 +11,5 @@ import space.ruiwang.domain.ServiceRegisterDO;
 public interface ServiceFinder {
     List<ServiceRegisterDO> getAllAvailableServices(String serviceName, String serviceVersion);
 
-    ServiceRegisterDO selectService(String serviceName, String serviceVersion);
+    ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType);
 }

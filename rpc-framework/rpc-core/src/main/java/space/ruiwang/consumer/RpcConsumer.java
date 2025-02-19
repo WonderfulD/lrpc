@@ -8,5 +8,5 @@ import space.ruiwang.domain.RpcResponseDO;
  * Created on 2025-02-12
  */
 public interface RpcConsumer {
-    RpcResponseDO send(RpcRequestDO rpcRequestDO);
+    RpcResponseDO send(RpcRequestDO rpcRequestDO, String loadBalancer, long retryCount, long timeout, String tolerant);
 }
