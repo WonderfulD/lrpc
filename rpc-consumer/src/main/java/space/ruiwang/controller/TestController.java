@@ -14,7 +14,7 @@ import space.ruiwang.utils.AjaxResult;
 @RequestMapping("/test")
 public class TestController {
 
-    @RpcReference(serviceVersion = "1.0", loadBalancer = LoadBalancerStrategies.RANDOM)
+    @RpcReference(serviceVersion = "1.0", loadBalancer = LoadBalancerStrategies.CONSISTENT_HASHING)
     private TestService testService;
 
     @PostMapping("/calc")
