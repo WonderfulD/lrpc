@@ -14,6 +14,5 @@ public interface RpcServer {
     // 使用线程安全的 Map 存储服务接口名与对应的服务实例
     Map<String, Object> SERVICE_MAP = new ConcurrentHashMap<>();
 
-    // Todo 使用spi机制选择具体网络通信实现
     void start(String hostName, int port);
 }

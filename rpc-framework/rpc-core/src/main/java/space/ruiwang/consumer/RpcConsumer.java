@@ -1,5 +1,6 @@
 package space.ruiwang.consumer;
 
+import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 
@@ -8,5 +9,5 @@ import space.ruiwang.domain.RpcResponseDO;
  * Created on 2025-02-12
  */
 public interface RpcConsumer {
-    RpcResponseDO send(RpcRequestDO rpcRequestDO, String loadBalancer, long retryCount, long timeout, String tolerant);
+    RpcResponseDO send(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig);
 }

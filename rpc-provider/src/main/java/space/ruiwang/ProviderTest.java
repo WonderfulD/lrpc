@@ -1,5 +1,7 @@
 package space.ruiwang;
 
+import java.util.ServiceLoader;
+
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.provider.RpcServer;
@@ -35,8 +37,10 @@ public class ProviderTest {
             log.warn(e.getMessage());
         }
 
-        // 启动服务
-        RpcServer server = new TomcatServer();
+        // 使用SPI机制加载RpcServer实现
+        ServiceLoader<RpcServer> loader = ServiceLoader.load(RpcServer.class);
+        RpcServer server = loader.findFirst().orElseThrow(() -> new RuntimeException("No RpcServer implementation found"));
+
         server.start(HOST_NAME, PORT);
     }
 }

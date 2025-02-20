@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcReference;
+import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.proxy.ProxyFactory;
 
 /**
@@ -29,9 +30,11 @@ public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
                 long retryCount = rpcReference.retryCount();
                 long timeout = rpcReference.timeout();
                 String tolerant = rpcReference.tolerant();
+                RpcRequestConfig rpcRequestConfig =
+                        new RpcRequestConfig(loadBalancerType, retryCount, timeout, tolerant);
 
                 // 获取代理对象并注入
-                Object proxy = ProxyFactory.getProxy(field.getType(), serviceVersion, loadBalancerType, retryCount, timeout, tolerant);
+                Object proxy = ProxyFactory.getProxy(field.getType(), serviceVersion, rpcRequestConfig);
                 field.setAccessible(true);
                 try {
                     field.set(bean, proxy);

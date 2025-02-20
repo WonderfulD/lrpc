@@ -8,6 +8,7 @@ import java.util.ServiceLoader;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.constants.RpcResponseCode;
 import space.ruiwang.consumer.RpcConsumer;
+import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 
@@ -28,7 +29,7 @@ public class ProxyFactory {
     }
 
     public static <T> T getProxy(Class<T> interfaceClass,
-            String serviceVersion, String loadBalancerType, long retryCount, long timeout, String tolerant) {
+            String serviceVersion, RpcRequestConfig rpcRequestConfig) {
         Object proxyInstance = Proxy.newProxyInstance(
                 ProxyFactory.class.getClassLoader(),
                 new Class<?>[]{interfaceClass},
@@ -42,7 +43,7 @@ public class ProxyFactory {
                                 method.getParameterTypes(),
                                 args);
                         // 发送Rpc请求
-                        RpcResponseDO rpcResponseDO = RPC_CONSUMER.send(rpcRequestDO, loadBalancerType, retryCount, timeout, tolerant);
+                        RpcResponseDO rpcResponseDO = RPC_CONSUMER.send(rpcRequestDO, rpcRequestConfig);
                         Object result = parseRpcResponse(rpcResponseDO, rpcRequestDO);
                         Class<?> returnType = method.getReturnType();
                         if (returnType.equals(Void.TYPE)) {
