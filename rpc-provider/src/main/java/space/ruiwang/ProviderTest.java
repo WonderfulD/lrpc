@@ -16,7 +16,7 @@ import space.ruiwang.serviceregister.impl.RemoteServiceRegister;
 @Slf4j
 public class ProviderTest {
     private static final String HOST_NAME = "localhost";
-    private static final int PORT = 8091;
+    private static final int PORT = 9001;
     public static void main(String[] args) {
         // 本地注册器
         LocalServiceRegister localServiceRegister = new LocalServiceRegister();

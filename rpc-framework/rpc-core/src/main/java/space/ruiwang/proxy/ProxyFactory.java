@@ -1,13 +1,13 @@
 package space.ruiwang.proxy;
 
+import static space.ruiwang.consumer.RpcConsumer.RPC_CONSUMER;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ServiceLoader;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.constants.RpcResponseCode;
-import space.ruiwang.consumer.RpcConsumer;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
@@ -19,14 +19,7 @@ import space.ruiwang.domain.RpcResponseDO;
 @Slf4j
 public class ProxyFactory {
 
-    // 通过 SPI 机制加载 RpcConsumer 的具体实现（例如 tomcat 模块中的 SimpleHttpClient）
-    private static final RpcConsumer RPC_CONSUMER = loadRpcConsumer();
 
-    private static RpcConsumer loadRpcConsumer() {
-        ServiceLoader<RpcConsumer> loader = ServiceLoader.load(RpcConsumer.class);
-        return loader.findFirst()
-                .orElseThrow(() -> new RuntimeException("No RpcConsumer implementation found!"));
-    }
 
     public static <T> T getProxy(Class<T> interfaceClass,
             String serviceVersion, RpcRequestConfig rpcRequestConfig) {
