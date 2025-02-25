@@ -2,8 +2,11 @@ package space.ruiwang.utils.redisops.impl;
 
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Resource;
+
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.stereotype.Component;
 
 import space.ruiwang.utils.redisops.RedisOpsTemplate;
 
@@ -11,13 +14,10 @@ import space.ruiwang.utils.redisops.RedisOpsTemplate;
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-14
  */
+@Component
 public class RedissonOps implements RedisOpsTemplate {
-
-    private final RedissonClient redissonClient;
-
-    public RedissonOps(RedissonClient redissonClient) {
-        this.redissonClient = redissonClient;
-    }
+    @Resource
+    private RedissonClient redissonClient;
 
     @Override
     public void set(String key, String value) {

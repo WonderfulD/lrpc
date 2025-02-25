@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.serviceregister.ServiceRegister;
@@ -23,6 +26,7 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  * 3. 仅示例用途；实际可与分布式注册中心协同
  */
 @Slf4j
+@Component
 public class LocalServiceRegister implements ServiceRegister {
 
     /**

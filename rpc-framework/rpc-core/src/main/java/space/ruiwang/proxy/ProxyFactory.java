@@ -1,13 +1,16 @@
 package space.ruiwang.proxy;
 
-import static space.ruiwang.consumer.RpcConsumer.RPC_CONSUMER;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.constants.RpcResponseCode;
+import space.ruiwang.consumer.RpcConsumer;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
@@ -17,11 +20,11 @@ import space.ruiwang.domain.RpcResponseDO;
  * Created on 2025-02-12
  */
 @Slf4j
+@Component
 public class ProxyFactory {
-
-
-
-    public static <T> T getProxy(Class<T> interfaceClass,
+    @Resource
+    private RpcConsumer rpcConsumer;
+    public <T> T getProxy(Class<T> interfaceClass,
             String serviceVersion, RpcRequestConfig rpcRequestConfig) {
         Object proxyInstance = Proxy.newProxyInstance(
                 ProxyFactory.class.getClassLoader(),
@@ -36,7 +39,7 @@ public class ProxyFactory {
                                 method.getParameterTypes(),
                                 args);
                         // 发送Rpc请求
-                        RpcResponseDO rpcResponseDO = RPC_CONSUMER.send(rpcRequestDO, rpcRequestConfig);
+                        RpcResponseDO rpcResponseDO = rpcConsumer.send(rpcRequestDO, rpcRequestConfig);
                         Object result = parseRpcResponse(rpcResponseDO, rpcRequestDO);
                         Class<?> returnType = method.getReturnType();
                         if (returnType.equals(Void.TYPE)) {
@@ -54,7 +57,7 @@ public class ProxyFactory {
      * @param rpcResponseDO
      * @return
      */
-    private static Object parseRpcResponse(RpcResponseDO rpcResponseDO, RpcRequestDO rpcRequestDO) {
+    private Object parseRpcResponse(RpcResponseDO rpcResponseDO, RpcRequestDO rpcRequestDO) {
         if (rpcResponseDO.getCode() != RpcResponseCode.SUCCESS) {
             log.error("rpc调用失败，请求参数: [{}]", rpcRequestDO);
             throw new RuntimeException(rpcResponseDO.getMsg());

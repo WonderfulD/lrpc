@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.reflections.Reflections;
 
-import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.annotation.RpcService;
+import space.ruiwang.domain.ServiceRegisterDO;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -32,7 +32,7 @@ public interface ServiceRegister {
             RpcService annotation = implClass.getAnnotation(RpcService.class);
 
             // 获取声明要注册的接口
-            Class<?> serviceInterface = annotation.value();
+            Class<?> serviceInterface = annotation.service();
 
             // 如果value是默认值（void.class），则自动获取第一个接口
             if (serviceInterface == void.class) {

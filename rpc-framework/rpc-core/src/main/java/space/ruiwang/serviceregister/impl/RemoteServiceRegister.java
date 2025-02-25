@@ -8,13 +8,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.serviceregister.ServiceRegister;
-import space.ruiwang.utils.RedissonManager;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.redisops.impl.RedissonOps;
 
@@ -23,9 +26,11 @@ import space.ruiwang.utils.redisops.impl.RedissonOps;
  * Created on 2025-02-12
  */
 @Slf4j
+@Component
 public class RemoteServiceRegister implements ServiceRegister {
 
-    private static final RedissonOps REDISSON_OPS = new RedissonOps(RedissonManager.getRedissonClient());
+    @Resource
+    private RedissonOps redissonOps;
 
     // 向Redis注册新服务
     @Override
@@ -33,7 +38,7 @@ public class RemoteServiceRegister implements ServiceRegister {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
         try {
             List<ServiceRegisterDO> registeredServices = null;
-            String registeredServicesStr = REDISSON_OPS.get(key);
+            String registeredServicesStr = redissonOps.get(key);
             if (StrUtil.isEmpty(registeredServicesStr)) {
                 // 当前key没有任何服务实例
                 registeredServices = new ArrayList<>();
@@ -47,7 +52,7 @@ public class RemoteServiceRegister implements ServiceRegister {
                 service.setEndTime(new Date().getTime() + SERVICE_TTL_MIL);
             }
             registeredServices.add(service);
-            REDISSON_OPS.setWithExpiration(key, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
+            redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.error("Registering a new Service meets en Error: {}", e.getMessage());
             return false;
@@ -58,7 +63,7 @@ public class RemoteServiceRegister implements ServiceRegister {
     // 查找key已注册的实例
     @Override
     public List<ServiceRegisterDO> search(String serviceKey) {
-        String registeredServicesStr = REDISSON_OPS.get(serviceKey);
+        String registeredServicesStr = redissonOps.get(serviceKey);
         if (StrUtil.isEmpty(registeredServicesStr)) {
             return null;
         }

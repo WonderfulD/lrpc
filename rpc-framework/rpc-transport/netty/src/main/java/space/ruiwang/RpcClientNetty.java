@@ -4,6 +4,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import cn.hutool.core.bean.BeanUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -22,15 +26,17 @@ import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
-import space.ruiwang.serviceselector.impl.ServiceSelectorImpl;
+import space.ruiwang.serviceselector.ServiceSelector;
 import space.ruiwang.utils.KryoSerializer;
 
+@Component
 public class RpcClientNetty implements RpcConsumer {
+    @Resource
+    private ServiceSelector serviceSelector;
 
     @Override
     public RpcResponseDO send(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
         // 查找服务实例
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl();
         ServiceInstance serviceInstance;
         try {
             serviceInstance = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));

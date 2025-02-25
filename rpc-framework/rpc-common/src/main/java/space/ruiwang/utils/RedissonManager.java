@@ -1,54 +1,74 @@
 package space.ruiwang.utils;
 
-import java.io.InputStream;
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.yaml.snakeyaml.Yaml;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-14
  */
+@Configuration
 public class RedissonManager {
-    private static RedissonClient redissonClient;
-    private static final String CONFIG_FILE = "config.yml";
 
-    public static RedissonClient getRedissonClient() {
-        if (redissonClient == null) {
-            Map<String, Object> props = loadYamlConfig();
-            Config config = new Config();
-            Map<String, Object> redisConfig = (Map<String, Object>) props.get("redis");
-            config.useSingleServer()
-                    .setAddress((String) redisConfig.get("address"))
-                    .setPassword((String) redisConfig.get("password"))
-                    .setDatabase((Integer) redisConfig.get("database"))
-                    .setConnectionMinimumIdleSize((Integer) redisConfig.get("connectionMinimumIdleSize"))
-                    .setConnectionPoolSize((Integer) redisConfig.get("connectionPoolSize"))
-                    .setConnectTimeout((Integer) redisConfig.get("connectTimeout"))
-                    .setTimeout((Integer) redisConfig.get("timeout"))
-                    .setRetryAttempts((Integer) redisConfig.get("retryAttempts"))
-                    .setRetryInterval((Integer) redisConfig.get("retryInterval"));
-            redissonClient = Redisson.create(config);
-        }
+    private RedissonClient redissonClient;
+
+    @Value("${redis.address}")
+    private String address;
+
+    @Value("${redis.password}")
+    private String password;
+
+    @Value("${redis.database}")
+    private int database;
+
+    @Value("${redis.connectionMinimumIdleSize}")
+    private int connectionMinimumIdleSize;
+
+    @Value("${redis.connectionPoolSize}")
+    private int connectionPoolSize;
+
+    @Value("${redis.connectTimeout}")
+    private int connectTimeout;
+
+    @Value("${redis.timeout}")
+    private int timeout;
+
+    @Value("${redis.retryAttempts}")
+    private int retryAttempts;
+
+    @Value("${redis.retryInterval}")
+    private int retryInterval;
+
+    @Bean
+    public RedissonClient redissonClient() {
         return redissonClient;
     }
 
-    private static Map<String, Object> loadYamlConfig() {
-        Yaml yaml = new Yaml();
-        try (InputStream inputStream = RedissonManager.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
-            if (inputStream == null) {
-                throw new RuntimeException("Unable to find " + CONFIG_FILE);
-            }
-            return yaml.load(inputStream);
-        } catch (Exception e) {
-            throw new RuntimeException("Error loading configuration", e);
-        }
+    @PostConstruct
+    public void init() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setAddress(address)
+                .setPassword(password)
+                .setDatabase(database)
+                .setConnectionMinimumIdleSize(connectionMinimumIdleSize)
+                .setConnectionPoolSize(connectionPoolSize)
+                .setConnectTimeout(connectTimeout)
+                .setTimeout(timeout)
+                .setRetryAttempts(retryAttempts)
+                .setRetryInterval(retryInterval);
+        redissonClient = Redisson.create(config);
     }
 
-    public static void shutdown() {
+    @PreDestroy
+    public void shutdown() {
         if (redissonClient != null && !redissonClient.isShutdown()) {
             redissonClient.shutdown();
         }

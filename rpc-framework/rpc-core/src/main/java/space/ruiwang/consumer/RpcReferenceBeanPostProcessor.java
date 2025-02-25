@@ -2,6 +2,8 @@ package space.ruiwang.consumer;
 
 import java.lang.reflect.Field;
 
+import javax.annotation.Resource;
+
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +19,8 @@ import space.ruiwang.proxy.ProxyFactory;
 @Slf4j
 @Configuration
 public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
+    @Resource
+    private ProxyFactory proxyFactory;
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -34,7 +38,7 @@ public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
                         new RpcRequestConfig(loadBalancerType, retryCount, timeout, tolerant);
 
                 // 获取代理对象并注入
-                Object proxy = ProxyFactory.getProxy(field.getType(), serviceVersion, rpcRequestConfig);
+                Object proxy = proxyFactory.getProxy(field.getType(), serviceVersion, rpcRequestConfig);
                 field.setAccessible(true);
                 try {
                     field.set(bean, proxy);

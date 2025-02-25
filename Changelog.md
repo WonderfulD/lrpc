@@ -22,6 +22,30 @@
 
 ---
 
+## [0.5.0] - 2025-2-25
+
+### 新增
+- 新增provider和consumer的application.yml文件及其模版
+- 新增RpcConsumerLoader类，使用Spring Factories来加载具体RpcConsumer实现
+- 新增RpcService后置处理器，用于启动provider
+- 丰富了RpcService注解内容，现在可以传入指定实现接口、服务版本、服务有效期
+
+### 变更
+- SpringBoot兼容性：provider现在使用SpringBoot启动
+- consumer现在使用Spring Factories来加载具体RpcConsumer实现，而非Java SPI
+- rpc-framework中部分组件现在被Spring管理
+- 删除了原Java SPI需要的配置文件
+
+### 修复
+- 无
+
+### 其他
+- 无
+
+---
+
+---
+
 ## [0.4.2] - 2025-2-21
 
 ### 新增

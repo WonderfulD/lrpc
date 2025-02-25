@@ -6,8 +6,8 @@ package space.ruiwang.constants;
  */
 public class RedisConstants {
     public static final String SERVICE_REGISTER_KEY = "service:register:";
-    public static final int SERVICE_CLUSTER_TTL_MIN = 10;
-    public static final int SERVICE_TTL_MIN = 5;
-    public static final int SERVICE_TTL_SEC = 300;
-    public static final int SERVICE_TTL_MIL = 300000;
+    public static final Long SERVICE_CLUSTER_TTL_MIN = 10L;
+    public static final Long SERVICE_TTL_MIN = 5L;
+    public static final Long SERVICE_TTL_SEC = 300L;
+    public static final Long SERVICE_TTL_MIL = 300000L;
 }

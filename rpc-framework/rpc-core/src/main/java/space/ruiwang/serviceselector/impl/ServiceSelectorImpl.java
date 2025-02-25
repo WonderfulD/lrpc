@@ -1,16 +1,16 @@
 package space.ruiwang.serviceselector.impl;
 
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
-import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.servicefinder.ServiceFinder;
-import space.ruiwang.servicefinder.impl.ServiceFinderImpl;
-import space.ruiwang.serviceregister.impl.LocalServiceRegister;
-import space.ruiwang.serviceregister.impl.RemoteServiceRegister;
 import space.ruiwang.serviceselector.ServiceSelector;
 
 /**
@@ -18,7 +18,10 @@ import space.ruiwang.serviceselector.ServiceSelector;
  * Created on 2025-02-20
  */
 @Slf4j
+@Component
 public class ServiceSelectorImpl implements ServiceSelector {
+    @Resource
+    private ServiceFinder serviceFinder;
     @Override
     public ServiceInstance selectService(RpcRequest rpcRequest) {
         RpcRequestDO requestDO = rpcRequest.getRequestDO();
@@ -29,7 +32,6 @@ public class ServiceSelectorImpl implements ServiceSelector {
 
         try {
             // 获取具体服务
-            ServiceFinder serviceFinder = new ServiceFinderImpl(new LocalServiceRegister(), new RemoteServiceRegister());
             ServiceRegisterDO selectedService =
                     serviceFinder.selectService(serviceName, serviceVersion, loadBalancerType);
             String hostName = selectedService.getServiceAddr();

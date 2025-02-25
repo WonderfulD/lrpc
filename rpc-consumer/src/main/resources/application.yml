@@ -1,0 +1,25 @@
+# \u670D\u52A1\u5668\u914D\u7F6E
+server:
+  port: 20001
+
+# \u65E5\u5FD7\u914D\u7F6E
+logging:
+  level:
+    root: INFO
+
+# Spring\u914D\u7F6E
+spring:
+  application:
+    name: rpc-consumer-demo
+
+# Redis\u914D\u7F6E
+redis:
+  address: "redis://47.93.44.153:6379"
+  password: "Cnjy601wr"
+  database: 1
+  connectionMinimumIdleSize: 5
+  connectionPoolSize: 15
+  connectTimeout: 10000
+  timeout: 5000
+  retryAttempts: 3
+  retryInterval: 1500

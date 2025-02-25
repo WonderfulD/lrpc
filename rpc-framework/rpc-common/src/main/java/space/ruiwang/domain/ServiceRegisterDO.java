@@ -26,7 +26,7 @@ public class ServiceRegisterDO implements Serializable {
      * @param port
      * @param ttl
      */
-    public ServiceRegisterDO(String serviceName, String serviceVersion, String serviceAddr, int port, Long ttl) {
+    public ServiceRegisterDO(String serviceName, String serviceVersion, String serviceAddr, Integer port, Long ttl) {
         this.serviceName = serviceName;
         this.serviceVersion = serviceVersion;
         this.serviceAddr = serviceAddr;
@@ -41,7 +41,7 @@ public class ServiceRegisterDO implements Serializable {
      * @param serviceAddr
      * @param port
      */
-    public ServiceRegisterDO(String serviceName, String serviceVersion, String serviceAddr, int port) {
+    public ServiceRegisterDO(String serviceName, String serviceVersion, String serviceAddr, Integer port) {
         this.serviceName = serviceName;
         this.serviceVersion = serviceVersion;
         this.serviceAddr = serviceAddr;

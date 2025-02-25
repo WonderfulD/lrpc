@@ -16,7 +16,6 @@ import space.ruiwang.utils.KryoSerializer;
  */
 @Slf4j
 public class RpcServerHandler extends ChannelInboundHandlerAdapter {
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         try {

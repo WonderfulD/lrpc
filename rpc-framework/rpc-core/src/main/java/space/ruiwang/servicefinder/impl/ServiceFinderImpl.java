@@ -3,13 +3,16 @@ package space.ruiwang.servicefinder.impl;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.loadbalance.LoadBalancer;
 import space.ruiwang.loadbalance.impl.RandomLoadBalancer;
 import space.ruiwang.servicefinder.ServiceFinder;
-import space.ruiwang.serviceregister.impl.LocalServiceRegister;
-import space.ruiwang.serviceregister.impl.RemoteServiceRegister;
+import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
@@ -17,16 +20,14 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  * Created on 2025-02-11
  */
 @Slf4j
+@Component
 public class ServiceFinderImpl implements ServiceFinder {
 
-    private final LocalServiceRegister localServiceRegister;
+    @Resource
+    private ServiceRegister localServiceRegister;
 
-    private final RemoteServiceRegister remoteServiceRegister;
-
-    public ServiceFinderImpl(LocalServiceRegister localServiceRegister, RemoteServiceRegister remoteServiceRegister) {
-        this.localServiceRegister = localServiceRegister;
-        this.remoteServiceRegister = remoteServiceRegister;
-    }
+    @Resource
+    private ServiceRegister remoteServiceRegister;
 
     /**
      * 根据服务名和服务版本号查找具体执行方法的服务

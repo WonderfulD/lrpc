@@ -35,4 +35,5 @@ build/
 .DS_Store
 
 # Configuration file
-rpc-framework/rpc-common/src/main/resources/config.yml
+rpc-consumer/src/main/resources/application.yml
+rpc-provider/src/main/resources/application.yml
