@@ -1,8 +1,12 @@
 package space.ruiwang.provider;
 
+import static space.ruiwang.constants.TaskConstants.INIT_RENEW_SERVICE_TTL;
+import static space.ruiwang.constants.TaskConstants.RENEW_SERVICE_TTL;
+import static space.ruiwang.factory.ThreadPoolFactory.RPC_PROVIDER_START_POOL;
+import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_EXPIRED_REMOVAL_POOL;
+import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_RENEWAL_POOL;
+
 import java.util.ServiceLoader;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PreDestroy;
@@ -15,8 +19,8 @@ import org.springframework.context.annotation.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcService;
-import space.ruiwang.beanFactory.ServiceRenewalTaskFactory;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.factory.beanFactory.TaskFactory;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
@@ -26,8 +30,6 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
 @Slf4j
 @Configuration
 public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
-    private static final ExecutorService RPC_THREAD_POOL = Executors.newFixedThreadPool(10);
-
     private static final String HOST_NAME = "localhost";
     private static final int PORT = 9001;
     @Resource
@@ -35,7 +37,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     @Resource
     private ServiceRegister remoteServiceRegister;
     @Resource
-    private ServiceRenewalTaskFactory serviceRenewalTaskFactory;
+    private TaskFactory taskFactory;
 
     private ServiceRegisterDO serviceRegisterDO;
 
@@ -77,12 +79,15 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
 
             // 只启动一次服务器
             if (!serverStarted) {
-                startRpcServer();
                 serverStarted = true;
+                startRpcServer();
             }
 
             // 线程池提交服务续约任务
-            serviceRenewal(serviceRegisterDO, ttl, TimeUnit.MILLISECONDS);
+            serviceRenewal(ttl, TimeUnit.MILLISECONDS);
+
+            // 线程池提交过期服务实例删除任务
+            removeExpiredServices(INIT_RENEW_SERVICE_TTL, RENEW_SERVICE_TTL, TimeUnit.MILLISECONDS);
         }
         return bean;
     }
@@ -106,11 +111,12 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
         ServiceLoader<RpcServer> loader = ServiceLoader.load(RpcServer.class);
         RpcServer server = loader.findFirst().orElseThrow(() -> new RuntimeException("No RpcServer implementation found"));
 
-        RPC_THREAD_POOL.submit(() -> {
+        RPC_PROVIDER_START_POOL.submit(() -> {
             try {
+                // 启动RPC服务器
                 server.start(HOST_NAME, PORT);
             } catch (Exception e) {
-                log.error("failed to start RpcServer[{}-{}]", HOST_NAME, PORT);
+                log.error("Failed to start RPC Server", e);
             }
         });
     }
@@ -119,7 +125,24 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
      * 服务续约
      * 心跳机制
      */
-    private void serviceRenewal(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
-        RPC_THREAD_POOL.submit(serviceRenewalTaskFactory.createTask(service, time, timeUnit));
+    private void serviceRenewal(Long time, TimeUnit timeUnit) {
+        SERVICE_RENEWAL_POOL.scheduleAtFixedRate(
+                taskFactory.createServiceRenewalTask(serviceRegisterDO, time, timeUnit),
+                time,
+                time / 2,
+                timeUnit
+        );
+    }
+
+    /**
+     * 过期服务实例剔除
+     */
+    private void removeExpiredServices(Long initDelay, Long delay, TimeUnit timeUnit) {
+        SERVICE_EXPIRED_REMOVAL_POOL.scheduleWithFixedDelay(
+                taskFactory.createServiceExpiredRemoveTask(serviceRegisterDO),
+                initDelay,
+                delay,
+                timeUnit
+        );
     }
 }

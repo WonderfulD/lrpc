@@ -17,6 +17,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.servicemanager.ServiceStatusUtil;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.redisops.impl.RedissonOps;
@@ -31,6 +32,8 @@ public class RemoteServiceRegister implements ServiceRegister {
 
     @Resource
     private RedissonOps redissonOps;
+    @Resource
+    private ServiceStatusUtil serviceStatusUtil;
 
     // 向Redis注册新服务
     @Override
@@ -47,6 +50,12 @@ public class RemoteServiceRegister implements ServiceRegister {
                 // 反序列化
                 registeredServices = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
             }
+
+            if (ifRegistered(registeredServices, service)) {
+                // 服务实例已被注册过
+                throw new RuntimeException("该服务实例已被注册");
+            }
+
             // 若该service未设置过期时间，这里手动设置默认逻辑过期时间
             if (service.getEndTime() == null) {
                 service.setEndTime(new Date().getTime() + SERVICE_TTL_MIL);
@@ -54,11 +63,13 @@ public class RemoteServiceRegister implements ServiceRegister {
             registeredServices.add(service);
             redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
         } catch (Exception e) {
-            log.error("Registering a new Service meets en Error: {}", e.getMessage());
+            log.error("远程注册中心：注册服务实例时发生异常。服务名: [{}], 异常信息: [{}]", service.getServiceName(), e.getMessage());
             return false;
         }
         return true;
     }
+
+
 
     /**
      * 取消注册
@@ -70,7 +81,7 @@ public class RemoteServiceRegister implements ServiceRegister {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
         List<ServiceRegisterDO> serviceList = search(key);
         if (serviceList == null) {
-            log.warn("远程注册中心：取消注册失败。未找到服务 [{}]", key);
+            log.warn("远程注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
             return false;
         }
         // 过滤出没有当前服务实例的服务实例列表
@@ -79,7 +90,7 @@ public class RemoteServiceRegister implements ServiceRegister {
                 .findFirst().orElse(null);
         // 更新redis
         redissonOps.getSet(key, JSONUtil.toJsonStr(otherService));
-        log.info("远程注册中心：服务下线完成。服务 [{}] 下线信息 [{}]",
+        log.info("远程注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]",
                 key, service);
         return true;
     }
@@ -111,16 +122,20 @@ public class RemoteServiceRegister implements ServiceRegister {
             log.warn("远程注册中心：续约失败。未找到匹配的服务实例 [{}]", service);
             return false;
         }
+        if (serviceStatusUtil.ifExpired(filteredService)) {
+            log.warn("远程注册中心：续约失败。已过期的服务实例 [{}]", service);
+            return false;
+        }
         Long endTime = filteredService.getEndTime();
-        long micros = timeUnit.toMicros(time);
-        filteredService.setEndTime(endTime + micros);
+        long renewedTime = timeUnit.toMillis(time);
+        filteredService.setEndTime(endTime + renewedTime);
         try {
             redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(foundServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("远程注册中心：续约失败。续约时发生错误：[{}]", e.getMessage());
             throw new RuntimeException(e);
         }
-        log.info("远程注册中心：服务续约成功。续约时间 [{}] 毫秒: {}", key, micros);
+        log.info("远程注册中心：服务实例续约成功。续约时间 [{}] 毫秒: {}", key, renewedTime);
         return true;
     }
 }

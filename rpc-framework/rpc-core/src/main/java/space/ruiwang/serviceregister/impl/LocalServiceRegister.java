@@ -6,10 +6,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Resource;
+
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.servicemanager.ServiceStatusUtil;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
@@ -41,6 +44,9 @@ public class LocalServiceRegister implements ServiceRegister {
      */
     private static final Map<String, CopyOnWriteArrayList<ServiceRegisterDO>> LOCAL_REGISTRATION = new ConcurrentHashMap<>();
 
+    @Resource
+    private ServiceStatusUtil serviceStatusUtil;
+
 
     /**
      * 注册服务到本地
@@ -58,16 +64,20 @@ public class LocalServiceRegister implements ServiceRegister {
             CopyOnWriteArrayList<ServiceRegisterDO> serviceList =
                     LOCAL_REGISTRATION.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>());
 
+            if (ifRegistered(serviceList, serviceRegisterDO)) {
+                // 服务实例已被注册过
+                throw new RuntimeException("该服务实例已被注册");
+            }
+
             serviceList.add(serviceRegisterDO);
 
-            log.info("本地注册中心：服务注册成功。服务名: [{}]， 注册信息: [{}]", key, serviceRegisterDO);
+            log.info("本地注册中心：服务实例注册成功。服务名: [{}]， 注册信息: [{}]", key, serviceRegisterDO);
             return true;
         } catch (Exception e) {
-            log.error("本地注册中心：注册服务时发生异常。服务名: [{}], 异常信息: [{}]", serviceRegisterDO.getServiceName(), e.getMessage());
+            log.error("本地注册中心：注册服务实例时发生异常。服务名: [{}], 异常信息: [{}]", serviceRegisterDO.getServiceName(), e.getMessage());
             return false;
         }
     }
-
 
     /**
      * 查找本地注册中心中某服务对应的ServiceRegisterDO列表
@@ -101,11 +111,11 @@ public class LocalServiceRegister implements ServiceRegister {
                     LOCAL_REGISTRATION.remove(key);
                 }
 
-                log.info("本地注册中心：服务下线完成。服务 [{}] 下线信息 [{}]", key, serviceRegisterDO);
+                log.info("本地注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]", key, serviceRegisterDO);
 
                 return removed;
             } else {
-                log.warn("本地注册中心：服务下线失败。尝试下线 [{}] 时未找到对应的ServiceRegisterDO列表", key);
+                log.warn("本地注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
                 return false;
             }
         } catch (Exception e) {
@@ -130,20 +140,22 @@ public class LocalServiceRegister implements ServiceRegister {
             return false;
         }
         ServiceRegisterDO filteredService = foundServices.stream().filter(e -> {
-            return e.getServiceAddr().equals(service.getServiceAddr())
+            return  e.getServiceAddr().equals(service.getServiceAddr())
                     &&
-                    e.getPort().equals(service.getPort())
-                    &&
-                    e.getEndTime().equals(service.getEndTime());
+                    e.getPort().equals(service.getPort());
         }).findFirst().orElse(null);
         if (filteredService == null) {
             log.warn("本地注册中心：续约失败。未找到匹配的服务实例 [{}]", service);
             return false;
         }
+        if (serviceStatusUtil.ifExpired(filteredService)) {
+            log.warn("本地注册中心：续约失败。已过期的服务实例 [{}]", service);
+            return false;
+        }
         Long endTime = filteredService.getEndTime();
-        long micros = timeUnit.toMicros(time);
-        filteredService.setEndTime(endTime + micros);
-        log.info("本地注册中心：服务续约成功。续约时间 [{}] 毫秒: {}", key, micros);
+        long renewedTime = timeUnit.toMillis(time);
+        filteredService.setEndTime(endTime + renewedTime);
+        log.info("本地注册中心：服务实例续约成功。续约时间 [{}] 毫秒: {}", key, renewedTime);
         return true;
     }
 }

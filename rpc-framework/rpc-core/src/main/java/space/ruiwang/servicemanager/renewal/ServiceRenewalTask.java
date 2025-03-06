@@ -1,4 +1,4 @@
-package space.ruiwang.servicemanager;
+package space.ruiwang.servicemanager.renewal;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,26 +27,13 @@ public class ServiceRenewalTask implements Runnable {
         this.time = time;
         this.timeUnit = timeUnit;
     }
-
     @Override
     public void run() {
-        long halfTimeInMillis = timeUnit.toMillis(time) / 2;
-
-        while (true) {
-            try {
-                // 执行续约
-                serviceRenewalUtil.renewLocalAndRemoteByTime(service, time, timeUnit);
-                log.info("续约成功 服务: [{}]", service);
-
-                // 暂停线程，等待下一次续约
-                Thread.sleep(halfTimeInMillis);
-            } catch (InterruptedException e) {
-                log.error("续约任务被中断 服务: [{}]", service, e);
-                Thread.currentThread().interrupt(); // 重新设置中断状态
-                break; // 退出循环
-            } catch (Exception e) {
-                log.error("续约失败 服务: [{}]", service, e);
-            }
+        try {
+            serviceRenewalUtil.renewLocalAndRemoteByTime(service, time, timeUnit);
+            log.info("续约成功 服务: [{}]", service);
+        } catch (Exception e) {
+            log.error("续约失败 服务: [{}]", service, e);
         }
     }
 }
