@@ -12,6 +12,7 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -21,6 +22,7 @@ import space.ruiwang.servicemanager.ServiceStatusUtil;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.redisops.impl.RedissonOps;
+
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -62,6 +64,7 @@ public class RemoteServiceRegister implements ServiceRegister {
             }
             registeredServices.add(service);
             redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
+            log.info("远程注册中心：服务实例注册成功。服务名: [{}]， 注册信息: [{}]", key, service);
         } catch (Exception e) {
             log.error("远程注册中心：注册服务实例时发生异常。服务名: [{}], 异常信息: [{}]", service.getServiceName(), e.getMessage());
             return false;
@@ -70,9 +73,8 @@ public class RemoteServiceRegister implements ServiceRegister {
     }
 
 
-
     /**
-     * 取消注册
+     * 服务下线
      * @param service
      * @return
      */
@@ -105,37 +107,45 @@ public class RemoteServiceRegister implements ServiceRegister {
         return JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
     }
 
-    @Override
+    /**
+     * 远程注册中心续期
+     * 并发风险
+     * 查找到需要续期的服务后，丧失CPU执行权，服务实例过期，被下线，此时续期服务还会尝试续期
+     * 解决办法：乐观锁
+     * 检查UUID是否和查找到的一致，只有一致才续期
+     */
     public boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
         List<ServiceRegisterDO> foundServices = search(key);
-        if (foundServices == null) {
+        if (CollUtil.isEmpty(foundServices)) {
             log.warn("远程注册中心：续约失败。未找到服务 [{}]", key);
             return false;
         }
-        ServiceRegisterDO filteredService = foundServices.stream().filter(e -> {
-            return e.getServiceAddr().equals(service.getServiceAddr())
-                    &&
-                    e.getPort().equals(service.getPort());
-        }).findFirst().orElse(null);
+        // 查找本服务实例 相同的uuid
+        ServiceRegisterDO filteredService = foundServices.stream()
+                .filter(e -> e.getUuid().equals(service.getUuid())).findFirst().orElse(null);
+
         if (filteredService == null) {
             log.warn("远程注册中心：续约失败。未找到匹配的服务实例 [{}]", service);
             return false;
         }
+
         if (serviceStatusUtil.ifExpired(filteredService)) {
             log.warn("远程注册中心：续约失败。已过期的服务实例 [{}]", service);
             return false;
         }
+
+        String uuid = filteredService.getUuid();
         Long endTime = filteredService.getEndTime();
-        long renewedTime = timeUnit.toMillis(time);
-        filteredService.setEndTime(endTime + renewedTime);
-        try {
-            redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(foundServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            log.warn("远程注册中心：续约失败。续约时发生错误：[{}]", e.getMessage());
-            throw new RuntimeException(e);
+        long extraTTL = timeUnit.toMillis(time);
+        long newEndTime = extraTTL + endTime;
+        boolean renewed = redissonOps.renewWithOLock(key, uuid, newEndTime, extraTTL);
+        if (!renewed) {
+            log.warn("远程注册中心：续约失败，实例不存在或UUID不匹配");
+            return false;
+        } else {
+            log.info("远程注册中心：服务实例续约成功。续约时间 [{}] 毫秒: {}", key, extraTTL);
+            return true;
         }
-        log.info("远程注册中心：服务实例续约成功。续约时间 [{}] 毫秒: {}", key, renewedTime);
-        return true;
     }
 }

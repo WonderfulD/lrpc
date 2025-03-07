@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.servicemanager.ServiceLoaderUtil;
 import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveTask;
 import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveUtil;
 import space.ruiwang.servicemanager.renewal.ServiceRenewalTask;
@@ -22,14 +23,14 @@ public class TaskFactory {
 
     @Resource
     private ServiceRenewalUtil serviceRenewalUtil;
-
     @Resource
     private ServiceExpiredRemoveUtil serviceExpiredRemoveUtil;
-
     @Resource(name = "localServiceRegister")
     private ServiceRegister localServiceRegister;
     @Resource(name = "remoteServiceRegister")
     private ServiceRegister remoteServiceRegister;
+    @Resource
+    private ServiceLoaderUtil serviceLoaderUtil;
 
     public ServiceRenewalTask createServiceRenewalTask(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         // 通过带参构造注入 serviceRenewalUtil
@@ -37,6 +38,6 @@ public class TaskFactory {
     }
 
     public ServiceExpiredRemoveTask createServiceExpiredRemoveTask(ServiceRegisterDO service) {
-        return new ServiceExpiredRemoveTask(serviceExpiredRemoveUtil, service, localServiceRegister, remoteServiceRegister);
+        return new ServiceExpiredRemoveTask(serviceExpiredRemoveUtil, service, localServiceRegister, remoteServiceRegister, serviceLoaderUtil);
     }
 }

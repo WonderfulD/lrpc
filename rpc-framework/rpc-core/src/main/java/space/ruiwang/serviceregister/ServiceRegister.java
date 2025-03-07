@@ -25,7 +25,6 @@ public interface ServiceRegister {
     boolean deregister(ServiceRegisterDO service);
 
     List<ServiceRegisterDO> search(String serviceKey);
-    boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit);
 
     /**
      * 该服务实例是否注册过，注册过返回true

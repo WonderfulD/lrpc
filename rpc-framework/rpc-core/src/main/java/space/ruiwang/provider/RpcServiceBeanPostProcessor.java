@@ -65,10 +65,11 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
             // 构造服务注册对象
             serviceRegisterDO =
                     new ServiceRegisterDO(serviceName.getName(), serviceVersion, HOST_NAME, PORT, ttl);
-            // 注册服务到本地
-            localServiceRegister.register(serviceRegisterDO);
+
             // 注册服务到远程
             remoteServiceRegister.register(serviceRegisterDO);
+            // 注册服务到本地
+            localServiceRegister.register(serviceRegisterDO);
 
             // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
             try {

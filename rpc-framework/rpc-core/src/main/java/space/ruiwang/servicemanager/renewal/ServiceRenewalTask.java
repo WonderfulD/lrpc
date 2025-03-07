@@ -2,6 +2,7 @@ package space.ruiwang.servicemanager.renewal;
 
 import java.util.concurrent.TimeUnit;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 
@@ -28,12 +29,8 @@ public class ServiceRenewalTask implements Runnable {
         this.timeUnit = timeUnit;
     }
     @Override
+    @SneakyThrows
     public void run() {
-        try {
-            serviceRenewalUtil.renewLocalAndRemoteByTime(service, time, timeUnit);
-            log.info("续约成功 服务: [{}]", service);
-        } catch (Exception e) {
-            log.error("续约失败 服务: [{}]", service, e);
-        }
+        serviceRenewalUtil.renew(service, time, timeUnit);
     }
 }
