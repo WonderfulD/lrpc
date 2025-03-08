@@ -2,7 +2,6 @@ package space.ruiwang.servicemanager.renewal;
 
 import java.util.concurrent.TimeUnit;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 
@@ -15,22 +14,25 @@ import space.ruiwang.domain.ServiceRegisterDO;
  */
 @Slf4j
 public class ServiceRenewalJob implements Runnable {
-    private ServiceRenewalUtil serviceRenewalUtil;
-
-    private ServiceRegisterDO service;
-    private Long time;
-    private TimeUnit timeUnit;
+    private final ServiceRenewalUtil serviceRenewalUtil;
+    private final ServiceRegisterDO service;
+    private final Long time;
+    private final TimeUnit timeUnit;
 
     public ServiceRenewalJob(ServiceRenewalUtil serviceRenewalUtil, ServiceRegisterDO service, Long time,
-                             TimeUnit timeUnit) {
+            TimeUnit timeUnit) {
         this.serviceRenewalUtil = serviceRenewalUtil;
         this.service = service;
         this.time = time;
         this.timeUnit = timeUnit;
     }
+
     @Override
-    @SneakyThrows
     public void run() {
-        serviceRenewalUtil.renew(service, time, timeUnit);
+        try {
+            serviceRenewalUtil.renew(service, time, timeUnit);
+        } catch (Exception e) {
+            log.error("执行服务续期任务时遇到错误", e);
+        }
     }
 }

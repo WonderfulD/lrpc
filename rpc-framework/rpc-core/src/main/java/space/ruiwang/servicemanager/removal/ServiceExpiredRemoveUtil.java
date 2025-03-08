@@ -4,7 +4,6 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.serviceregister.ServiceRegister;
@@ -22,7 +21,6 @@ public class ServiceExpiredRemoveUtil {
     @Resource(name = "remoteServiceRegister")
     private ServiceRegister remoteServiceRegister;
 
-    @SneakyThrows
     public boolean removeLocalExpiredService(ServiceRegisterDO service) {
         if (service == null) {
             return false;
@@ -30,7 +28,6 @@ public class ServiceExpiredRemoveUtil {
         return localServiceRegister.deregister(service);
     }
 
-    @SneakyThrows
     public boolean removeRemoteExpiredService(ServiceRegisterDO service) {
         if (service == null) {
             return false;

@@ -1,7 +1,5 @@
 package space.ruiwang.provider;
 
-import static space.ruiwang.constants.TaskConstants.INIT_RENEW_SERVICE_TTL;
-import static space.ruiwang.constants.TaskConstants.RENEW_SERVICE_TTL;
 import static space.ruiwang.factory.ThreadPoolFactory.RPC_PROVIDER_START_POOL;
 import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_EXPIRED_REMOVAL_POOL;
 import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_RENEWAL_POOL;
@@ -16,7 +14,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcService;
 import space.ruiwang.domain.ServiceRegisterDO;
@@ -26,6 +23,8 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
  * 处理 @RpcService 注解的 BeanPostProcessor
+ * @author wangrui <wangrui45@kuaishou.com>
+ * Created on 2025-02-11
  */
 @Slf4j
 @Configuration
@@ -94,7 +93,6 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     }
 
     @PreDestroy
-    @SneakyThrows
     private void shutdown() {
         localServiceRegister.deregister(serviceRegisterDO);
         remoteServiceRegister.deregister(serviceRegisterDO);
