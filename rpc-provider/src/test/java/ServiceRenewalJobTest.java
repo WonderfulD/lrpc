@@ -1,5 +1,3 @@
-import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_RENEWAL_POOL;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +19,7 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  * Created on 2025-03-07
  */
 @SpringBootTest(classes = RpcProviderDemoApplication.class)
-public class ServiceRenewalTaskTest {
+public class ServiceRenewalJobTest {
 
     @Resource
     private TaskFactory taskFactory;
@@ -36,7 +34,7 @@ public class ServiceRenewalTaskTest {
         serivce.setUuid("8b86397fd2f342ec90532723c661f8d2");
         Long time = 1000L;
         TimeUnit timeUnit = TimeUnit.MILLISECONDS;
-        taskFactory.createServiceRenewalTask(serivce, time, timeUnit).run();
+        taskFactory.createServiceRenewalJob(serivce, time, timeUnit).run();
         List<ServiceRegisterDO> search = localServiceRegister.search(
                 RpcServiceKeyBuilder.buildServiceKey(serivce.getServiceName(), serivce.getServiceVersion()));
         System.out.println(search);

@@ -68,7 +68,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
 
             // 注册服务到远程
             remoteServiceRegister.register(serviceRegisterDO);
-            // 注册服务到本地
+            // 拉取服务到本地
             localServiceRegister.register(serviceRegisterDO);
 
             // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
@@ -87,8 +87,8 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
             // 线程池提交服务续约任务
             serviceRenewal(ttl, TimeUnit.MILLISECONDS);
 
-            // 线程池提交过期服务实例删除任务
-            removeExpiredServices(INIT_RENEW_SERVICE_TTL, RENEW_SERVICE_TTL, TimeUnit.MILLISECONDS);
+//            // 线程池提交过期服务实例删除任务
+//            removeExpiredServices(INIT_RENEW_SERVICE_TTL, RENEW_SERVICE_TTL, TimeUnit.MILLISECONDS);
         }
         return bean;
     }
@@ -128,8 +128,8 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
      */
     private void serviceRenewal(Long time, TimeUnit timeUnit) {
         SERVICE_RENEWAL_POOL.scheduleAtFixedRate(
-                taskFactory.createServiceRenewalTask(serviceRegisterDO, time, timeUnit),
-                time,
+                taskFactory.createServiceRenewalJob(serviceRegisterDO, time, timeUnit),
+                time / 2,
                 time / 2,
                 timeUnit
         );
@@ -140,7 +140,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
      */
     private void removeExpiredServices(Long initDelay, Long delay, TimeUnit timeUnit) {
         SERVICE_EXPIRED_REMOVAL_POOL.scheduleWithFixedDelay(
-                taskFactory.createServiceExpiredRemoveTask(serviceRegisterDO),
+                taskFactory.createServiceExpiredRemoveJob(serviceRegisterDO),
                 initDelay,
                 delay,
                 timeUnit

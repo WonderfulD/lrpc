@@ -95,17 +95,6 @@ public class LocalServiceRegister implements ServiceRegister {
     }
 
     /**
-     * 查找本地注册中心中某服务对应的ServiceRegisterDO列表
-     *
-     * @param serviceKey 服务Key
-     * @return ServiceRegisterDO列表；可能为null或空，如果未找到
-     */
-    @Override
-    public List<ServiceRegisterDO> search(String serviceKey) {
-        return LOCAL_REGISTRATION.get(serviceKey);
-    }
-
-    /**
      * 拉取远程注册中心数据
      */
     public boolean loadService(String serviceName, String serviceVersion) {
@@ -119,5 +108,16 @@ public class LocalServiceRegister implements ServiceRegister {
             log.error("从远程注册中心拉取服务[{}]失败, 错误信息: [{}]", serviceKey, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 查找本地注册中心中某服务对应的ServiceRegisterDO列表
+     *
+     * @param serviceKey 服务Key
+     * @return ServiceRegisterDO列表；可能为null或空，如果未找到
+     */
+    @Override
+    public List<ServiceRegisterDO> search(String serviceKey) {
+        return LOCAL_REGISTRATION.get(serviceKey);
     }
 }

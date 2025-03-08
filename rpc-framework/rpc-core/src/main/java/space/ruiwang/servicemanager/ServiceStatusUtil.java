@@ -20,7 +20,7 @@ public class ServiceStatusUtil {
     public boolean ifExpired(ServiceRegisterDO service) {
         long now = System.currentTimeMillis();
         Long endTime = service.getEndTime();
-        return now <= endTime;
+        return now > endTime;
     }
 
     /**

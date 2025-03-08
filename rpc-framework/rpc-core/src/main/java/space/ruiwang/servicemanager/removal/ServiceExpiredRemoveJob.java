@@ -13,7 +13,7 @@ import space.ruiwang.serviceregister.ServiceRegister;
  * Created on 2025-03-05
  */
 @Slf4j
-public class ServiceExpiredRemoveTask implements Runnable {
+public class ServiceExpiredRemoveJob implements Runnable {
     private ServiceExpiredRemoveUtil serviceExpiredRemoveUtil;
 
     private ServiceRegisterDO serviceRegisterDO;
@@ -22,10 +22,10 @@ public class ServiceExpiredRemoveTask implements Runnable {
 
     private ServiceLoaderUtil serviceLoaderUtil;
 
-    public ServiceExpiredRemoveTask(ServiceExpiredRemoveUtil serviceExpiredRemoveUtil,
-            ServiceRegisterDO serviceRegisterDO,
-            ServiceRegister localServiceRegister, ServiceRegister remoteServiceRegister,
-            ServiceLoaderUtil serviceLoaderUtil) {
+    public ServiceExpiredRemoveJob(ServiceExpiredRemoveUtil serviceExpiredRemoveUtil,
+                                   ServiceRegisterDO serviceRegisterDO,
+                                   ServiceRegister localServiceRegister, ServiceRegister remoteServiceRegister,
+                                   ServiceLoaderUtil serviceLoaderUtil) {
         this.serviceExpiredRemoveUtil = serviceExpiredRemoveUtil;
         this.serviceRegisterDO = serviceRegisterDO;
         this.localServiceRegister = localServiceRegister;

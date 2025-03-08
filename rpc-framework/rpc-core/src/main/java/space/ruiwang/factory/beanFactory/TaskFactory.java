@@ -8,9 +8,9 @@ import org.springframework.context.annotation.Configuration;
 
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.servicemanager.ServiceLoaderUtil;
-import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveTask;
+import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveJob;
 import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveUtil;
-import space.ruiwang.servicemanager.renewal.ServiceRenewalTask;
+import space.ruiwang.servicemanager.renewal.ServiceRenewalJob;
 import space.ruiwang.servicemanager.renewal.ServiceRenewalUtil;
 import space.ruiwang.serviceregister.ServiceRegister;
 
@@ -32,12 +32,12 @@ public class TaskFactory {
     @Resource
     private ServiceLoaderUtil serviceLoaderUtil;
 
-    public ServiceRenewalTask createServiceRenewalTask(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
+    public ServiceRenewalJob createServiceRenewalJob(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         // 通过带参构造注入 serviceRenewalUtil
-        return new ServiceRenewalTask(serviceRenewalUtil, service, time, timeUnit);
+        return new ServiceRenewalJob(serviceRenewalUtil, service, time, timeUnit);
     }
 
-    public ServiceExpiredRemoveTask createServiceExpiredRemoveTask(ServiceRegisterDO service) {
-        return new ServiceExpiredRemoveTask(serviceExpiredRemoveUtil, service, localServiceRegister, remoteServiceRegister, serviceLoaderUtil);
+    public ServiceExpiredRemoveJob createServiceExpiredRemoveJob(ServiceRegisterDO service) {
+        return new ServiceExpiredRemoveJob(serviceExpiredRemoveUtil, service, localServiceRegister, remoteServiceRegister, serviceLoaderUtil);
     }
 }
