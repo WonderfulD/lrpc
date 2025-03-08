@@ -4,8 +4,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.Resource;
-
 import org.springframework.stereotype.Component;
 
 import io.netty.bootstrap.Bootstrap;
@@ -24,14 +22,10 @@ import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
-import space.ruiwang.serviceselector.ServiceSelector;
 import space.ruiwang.utils.KryoSerializer;
 
 @Component
 public class RpcClientNetty implements RpcConsumer {
-    @Resource
-    private ServiceSelector serviceSelector;
-
     @Override
     public RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
         String hostName = serviceInstance.getHostname();
@@ -62,7 +56,7 @@ public class RpcClientNetty implements RpcConsumer {
 
             // 异步等待响应，设置超时时间
             CompletableFuture<RpcResponseDO> responseFuture = handler.getResponseFuture();
-            RpcResponseDO response = responseFuture.get(5, TimeUnit.SECONDS);
+            RpcResponseDO response = responseFuture.get(rpcRequestConfig.getTimeout(), TimeUnit.SECONDS);
 
             return response;
         } catch (InterruptedException e) {
