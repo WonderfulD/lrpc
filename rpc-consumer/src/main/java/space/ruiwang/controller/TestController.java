@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import space.ruiwang.annotation.RpcReference;
-import space.ruiwang.loadbalance.LoadBalancerStrategies;
 import space.ruiwang.service.TestService;
 import space.ruiwang.utils.AjaxResult;
 
@@ -14,7 +13,7 @@ import space.ruiwang.utils.AjaxResult;
 @RequestMapping("/test")
 public class TestController {
 
-    @RpcReference(serviceVersion = "1.0", loadBalancer = LoadBalancerStrategies.CONSISTENT_HASHING)
+    @RpcReference
     private TestService testService;
 
     @PostMapping("/calc")

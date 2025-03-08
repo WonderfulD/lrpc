@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import org.reflections.Reflections;
 
@@ -26,7 +25,20 @@ public interface ServiceRegister {
 
     List<ServiceRegisterDO> search(String serviceKey);
 
-    boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit);
+    /**
+     * 该服务实例是否注册过，注册过返回true
+     */
+    default boolean ifRegistered(List<ServiceRegisterDO> serviceList, ServiceRegisterDO service) {
+        if (serviceList.isEmpty()) {
+            // 空List，返回false
+            return false;
+        }
+        return serviceList.stream().anyMatch(s -> {
+            return s.getServiceAddr().equals(service.getServiceAddr())
+                    &&
+                    s.getPort().equals(service.getPort());
+        });
+    }
 
     // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
     static void serviceImplRegister() throws Exception {
