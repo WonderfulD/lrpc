@@ -1,8 +1,5 @@
 package space.ruiwang.servicemanager.removal;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.servicemanager.ServiceLoaderUtil;
@@ -15,11 +12,9 @@ import space.ruiwang.serviceregister.ServiceRegister;
 @Slf4j
 public class ServiceExpiredRemoveJob implements Runnable {
     private ServiceExpiredRemoveUtil serviceExpiredRemoveUtil;
-
     private ServiceRegisterDO serviceRegisterDO;
     private ServiceRegister localServiceRegister;
     private ServiceRegister remoteServiceRegister;
-
     private ServiceLoaderUtil serviceLoaderUtil;
 
     public ServiceExpiredRemoveJob(ServiceExpiredRemoveUtil serviceExpiredRemoveUtil,
@@ -36,8 +31,5 @@ public class ServiceExpiredRemoveJob implements Runnable {
     @Override
     public void run() {
         // TODO 远程注册中心所有过期服务实例下线逻辑
-        // 本地注册中心同步
-        List<String> changedServiceList = new ArrayList<>();
-        changedServiceList.forEach(serviceLoaderUtil::loadService);
     }
 }
