@@ -8,7 +8,6 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
-import cn.hutool.core.bean.BeanUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -21,7 +20,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToByteEncoder;
 import space.ruiwang.consumer.RpcConsumer;
-import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
@@ -35,18 +33,7 @@ public class RpcClientNetty implements RpcConsumer {
     private ServiceSelector serviceSelector;
 
     @Override
-    public RpcResponseDO send(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
-        // 查找服务实例
-        ServiceInstance serviceInstance;
-        try {
-            serviceInstance = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));
-        } catch (Exception e) {
-            return RpcResponseDO.error(e.getMessage());
-        }
-        if (serviceInstance == null || BeanUtil.isEmpty(serviceInstance)) {
-            return RpcResponseDO.error("RPC调用失败，无法找到服务实例");
-        }
-
+    public RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
         String hostName = serviceInstance.getHostname();
         int port = serviceInstance.getPort();
 

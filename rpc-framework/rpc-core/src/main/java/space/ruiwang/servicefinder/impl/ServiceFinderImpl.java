@@ -43,7 +43,7 @@ public class ServiceFinderImpl implements ServiceFinder {
     @Override
     public ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType) {
         List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
-        return selectService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
+        return getService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
     }
 
     /**
@@ -89,7 +89,7 @@ public class ServiceFinderImpl implements ServiceFinder {
      * 从所有可用服务中获取具体执行方法的服务
      * @param availableServices 所有可用服务
      */
-    private static ServiceRegisterDO selectService(String serviceName, String serviceVersion, List<ServiceRegisterDO> availableServices,
+    private static ServiceRegisterDO getService(String serviceName, String serviceVersion, List<ServiceRegisterDO> availableServices,
             String loadBalancerType) {
         // 负载均衡
         LoadBalancer loadBalancer;

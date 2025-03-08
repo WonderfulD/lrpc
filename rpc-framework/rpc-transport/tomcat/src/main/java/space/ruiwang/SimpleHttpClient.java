@@ -5,15 +5,12 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import cn.hutool.core.bean.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.consumer.RpcConsumer;
-import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
-import space.ruiwang.serviceselector.impl.ServiceSelectorImpl;
 import space.ruiwang.utils.InputStreamUtils;
 import space.ruiwang.utils.KryoSerializer;
 
@@ -24,18 +21,7 @@ import space.ruiwang.utils.KryoSerializer;
 @Slf4j
 public class SimpleHttpClient implements RpcConsumer {
     @Override
-    public RpcResponseDO send(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
-        // 查找发送rpc请求的服务：hostname+port
-        ServiceSelectorImpl serviceSelector = new ServiceSelectorImpl();
-        ServiceInstance serviceInstance = null;
-        try {
-            serviceInstance = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));
-        } catch (Exception e) {
-            return RpcResponseDO.error(e.getMessage());
-        }
-        if (serviceInstance == null || BeanUtil.isEmpty(serviceInstance)) {
-            return RpcResponseDO.error("Rpc调用失败，无法找到实例");
-        }
+    public RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
         String hostName = serviceInstance.getHostname();
         int port = serviceInstance.getPort();
 
