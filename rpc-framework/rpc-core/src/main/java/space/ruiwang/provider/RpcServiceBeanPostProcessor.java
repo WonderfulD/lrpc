@@ -1,8 +1,10 @@
 package space.ruiwang.provider;
 
+import static space.ruiwang.factory.ThreadPoolFactory.RPC_PROVIDER_START_POOL;
+import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_EXPIRED_REMOVAL_POOL;
+import static space.ruiwang.factory.ThreadPoolFactory.SERVICE_RENEWAL_POOL;
+
 import java.util.ServiceLoader;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PreDestroy;
@@ -12,22 +14,21 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcService;
-import space.ruiwang.beanFactory.ServiceRenewalTaskFactory;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.factory.beanFactory.TaskFactory;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
  * 处理 @RpcService 注解的 BeanPostProcessor
+ * @author wangrui <wangrui45@kuaishou.com>
+ * Created on 2025-02-11
  */
 @Slf4j
 @Configuration
 public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
-    private static final ExecutorService RPC_THREAD_POOL = Executors.newFixedThreadPool(10);
-
     private static final String HOST_NAME = "localhost";
     private static final int PORT = 9001;
     @Resource
@@ -35,7 +36,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     @Resource
     private ServiceRegister remoteServiceRegister;
     @Resource
-    private ServiceRenewalTaskFactory serviceRenewalTaskFactory;
+    private TaskFactory taskFactory;
 
     private ServiceRegisterDO serviceRegisterDO;
 
@@ -63,10 +64,11 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
             // 构造服务注册对象
             serviceRegisterDO =
                     new ServiceRegisterDO(serviceName.getName(), serviceVersion, HOST_NAME, PORT, ttl);
-            // 注册服务到本地
-            localServiceRegister.register(serviceRegisterDO);
+
             // 注册服务到远程
             remoteServiceRegister.register(serviceRegisterDO);
+            // 拉取服务到本地
+            localServiceRegister.register(serviceRegisterDO);
 
             // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
             try {
@@ -77,18 +79,20 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
 
             // 只启动一次服务器
             if (!serverStarted) {
-                startRpcServer();
                 serverStarted = true;
+                startRpcServer();
             }
 
             // 线程池提交服务续约任务
-            serviceRenewal(serviceRegisterDO, ttl, TimeUnit.MILLISECONDS);
+            serviceRenewal(ttl, TimeUnit.MILLISECONDS);
+
+//            // 线程池提交过期服务实例删除任务
+//            removeExpiredServices(INIT_RENEW_SERVICE_TTL, RENEW_SERVICE_TTL, TimeUnit.MILLISECONDS);
         }
         return bean;
     }
 
     @PreDestroy
-    @SneakyThrows
     private void shutdown() {
         localServiceRegister.deregister(serviceRegisterDO);
         remoteServiceRegister.deregister(serviceRegisterDO);
@@ -106,11 +110,12 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
         ServiceLoader<RpcServer> loader = ServiceLoader.load(RpcServer.class);
         RpcServer server = loader.findFirst().orElseThrow(() -> new RuntimeException("No RpcServer implementation found"));
 
-        RPC_THREAD_POOL.submit(() -> {
+        RPC_PROVIDER_START_POOL.submit(() -> {
             try {
+                // 启动RPC服务器
                 server.start(HOST_NAME, PORT);
             } catch (Exception e) {
-                log.error("failed to start RpcServer[{}-{}]", HOST_NAME, PORT);
+                log.error("Failed to start RPC Server", e);
             }
         });
     }
@@ -119,7 +124,24 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
      * 服务续约
      * 心跳机制
      */
-    private void serviceRenewal(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
-        RPC_THREAD_POOL.submit(serviceRenewalTaskFactory.createTask(service, time, timeUnit));
+    private void serviceRenewal(Long time, TimeUnit timeUnit) {
+        SERVICE_RENEWAL_POOL.scheduleAtFixedRate(
+                taskFactory.createServiceRenewalJob(serviceRegisterDO, time, timeUnit),
+                time / 2,
+                time / 2,
+                timeUnit
+        );
+    }
+
+    /**
+     * 过期服务实例剔除
+     */
+    private void removeExpiredServices(Long initDelay, Long delay, TimeUnit timeUnit) {
+        SERVICE_EXPIRED_REMOVAL_POOL.scheduleWithFixedDelay(
+                taskFactory.createServiceExpiredRemoveJob(serviceRegisterDO),
+                initDelay,
+                delay,
+                timeUnit
+        );
     }
 }

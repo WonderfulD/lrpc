@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.servicemanager.ServiceLoaderUtil;
 import space.ruiwang.serviceregister.ServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
@@ -41,45 +43,23 @@ public class LocalServiceRegister implements ServiceRegister {
      */
     private static final Map<String, CopyOnWriteArrayList<ServiceRegisterDO>> LOCAL_REGISTRATION = new ConcurrentHashMap<>();
 
+    @Resource
+    private ServiceLoaderUtil serviceLoaderUtil;
+
 
     /**
      * 注册服务到本地
+     * 即拉取远程服务注册中心对应服务的镜像
      *
      * @param serviceRegisterDO 服务描述对象 (包含服务的详细信息)
      * @return 注册成功返回true, 失败返回false
      */
     @Override
     public boolean register(ServiceRegisterDO serviceRegisterDO) {
-        try {
-            // 构建服务唯一标识 (服务名 + 版本)
-            String key = RpcServiceKeyBuilder.buildServiceKey(serviceRegisterDO.getServiceName(), serviceRegisterDO.getServiceVersion());
-
-            // 如果Map中没有这个key，则先put一个新的List；否则返回已有的List
-            CopyOnWriteArrayList<ServiceRegisterDO> serviceList =
-                    LOCAL_REGISTRATION.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>());
-
-            serviceList.add(serviceRegisterDO);
-
-            log.info("本地注册中心：服务注册成功。服务名: [{}]， 注册信息: [{}]", key, serviceRegisterDO);
-            return true;
-        } catch (Exception e) {
-            log.error("本地注册中心：注册服务时发生异常。服务名: [{}], 异常信息: [{}]", serviceRegisterDO.getServiceName(), e.getMessage());
-            return false;
-        }
+        String serviceName = serviceRegisterDO.getServiceName();
+        String serviceVersion = serviceRegisterDO.getServiceVersion();
+        return loadService(serviceName, serviceVersion);
     }
-
-
-    /**
-     * 查找本地注册中心中某服务对应的ServiceRegisterDO列表
-     *
-     * @param serviceKey 服务Key
-     * @return ServiceRegisterDO列表；可能为null或空，如果未找到
-     */
-    @Override
-    public List<ServiceRegisterDO> search(String serviceKey) {
-        return LOCAL_REGISTRATION.get(serviceKey);
-    }
-
 
     /**
      * 将某个具体实现的服务从本地注册中心移除
@@ -101,11 +81,11 @@ public class LocalServiceRegister implements ServiceRegister {
                     LOCAL_REGISTRATION.remove(key);
                 }
 
-                log.info("本地注册中心：服务下线完成。服务 [{}] 下线信息 [{}]", key, serviceRegisterDO);
+                log.info("本地注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]", key, serviceRegisterDO);
 
                 return removed;
             } else {
-                log.warn("本地注册中心：服务下线失败。尝试下线 [{}] 时未找到对应的ServiceRegisterDO列表", key);
+                log.warn("本地注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
                 return false;
             }
         } catch (Exception e) {
@@ -115,35 +95,29 @@ public class LocalServiceRegister implements ServiceRegister {
     }
 
     /**
-     * 针对某一服务实例续约
-     * @param service
-     * @param time
-     * @param timeUnit
-     * @return
+     * 拉取远程注册中心数据
+     */
+    public boolean loadService(String serviceName, String serviceVersion) {
+        String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceName, serviceVersion);
+        try {
+            CopyOnWriteArrayList<ServiceRegisterDO> serviceList = new CopyOnWriteArrayList<>(serviceLoaderUtil.loadService(serviceKey));
+            LOCAL_REGISTRATION.put(serviceKey, serviceList);
+            log.info("从远程注册中心拉取服务[{}]成功", serviceKey);
+            return true;
+        } catch (Exception e) {
+            log.error("从远程注册中心拉取服务[{}]失败, 错误信息: [{}]", serviceKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 查找本地注册中心中某服务对应的ServiceRegisterDO列表
+     *
+     * @param serviceKey 服务Key
+     * @return ServiceRegisterDO列表；可能为null或空，如果未找到
      */
     @Override
-    public boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
-        String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
-        List<ServiceRegisterDO> foundServices = search(key);
-        if (foundServices == null) {
-            log.warn("本地注册中心：续约失败。未找到服务 [{}]", key);
-            return false;
-        }
-        ServiceRegisterDO filteredService = foundServices.stream().filter(e -> {
-            return e.getServiceAddr().equals(service.getServiceAddr())
-                    &&
-                    e.getPort().equals(service.getPort())
-                    &&
-                    e.getEndTime().equals(service.getEndTime());
-        }).findFirst().orElse(null);
-        if (filteredService == null) {
-            log.warn("本地注册中心：续约失败。未找到匹配的服务实例 [{}]", service);
-            return false;
-        }
-        Long endTime = filteredService.getEndTime();
-        long micros = timeUnit.toMicros(time);
-        filteredService.setEndTime(endTime + micros);
-        log.info("本地注册中心：服务续约成功。续约时间 [{}] 毫秒: {}", key, micros);
-        return true;
+    public List<ServiceRegisterDO> search(String serviceKey) {
+        return LOCAL_REGISTRATION.get(serviceKey);
     }
 }

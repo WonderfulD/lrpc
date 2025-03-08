@@ -5,6 +5,7 @@ import javax.annotation.PreDestroy;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -64,6 +65,7 @@ public class RedissonManager {
                 .setTimeout(timeout)
                 .setRetryAttempts(retryAttempts)
                 .setRetryInterval(retryInterval);
+        config.setCodec(StringCodec.INSTANCE);
         redissonClient = Redisson.create(config);
     }
 
