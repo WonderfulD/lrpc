@@ -89,7 +89,6 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
 
     @PreDestroy
     private void shutdown() {
-        localServiceRegister.deregister(serviceRegisterDO);
         remoteServiceRegister.deregister(serviceRegisterDO);
         String key = RpcServiceKeyBuilder.buildServiceKey(serviceRegisterDO.getServiceName(),
                 serviceRegisterDO.getServiceVersion());

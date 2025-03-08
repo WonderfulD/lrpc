@@ -2,6 +2,7 @@ package space.ruiwang.servicefinder.impl;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -44,6 +45,21 @@ public class ServiceFinderImpl implements ServiceFinder {
     public ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType) {
         List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
         return getService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
+    }
+
+    /**
+     * 根据服务名和服务版本号查找具体执行方法的服务，去掉传入的服务实例列表
+     */
+    @Override
+    public ServiceRegisterDO selectOtherService(String serviceName, String serviceVersion, String loadBalancerType,
+            List<ServiceRegisterDO> excludedServices) {
+        if (CollUtil.isEmpty(excludedServices)) {
+            return selectService(serviceName, serviceVersion, loadBalancerType);
+        }
+        List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
+        List<ServiceRegisterDO> filtered =
+                allAvailableServices.stream().filter(e -> !excludedServices.contains(e)).collect(Collectors.toList());
+        return getService(serviceName, serviceVersion, filtered, loadBalancerType);
     }
 
     /**

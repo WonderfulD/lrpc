@@ -12,4 +12,6 @@ public interface ServiceFinder {
     List<ServiceRegisterDO> getAllAvailableServices(String serviceName, String serviceVersion);
 
     ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType);
+    ServiceRegisterDO selectOtherService(String serviceName, String serviceVersion,
+            String loadBalancerType, List<ServiceRegisterDO> excludedServices);
 }
