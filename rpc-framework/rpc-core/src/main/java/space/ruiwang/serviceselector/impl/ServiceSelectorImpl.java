@@ -11,8 +11,8 @@ import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.servicefinder.ServiceFinder;
-import space.ruiwang.serviceselector.ServiceSelector;
+import space.ruiwang.servicefinder.IServiceFinder;
+import space.ruiwang.serviceselector.IServiceSelector;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -20,9 +20,9 @@ import space.ruiwang.serviceselector.ServiceSelector;
  */
 @Slf4j
 @Component
-public class ServiceSelectorImpl implements ServiceSelector {
+public class ServiceSelectorImpl implements IServiceSelector {
     @Resource
-    private ServiceFinder serviceFinder;
+    private IServiceFinder serviceFinder;
     @Override
     public ServiceRegisterDO selectService(RpcRequest rpcRequest) {
         RpcRequestDO requestDO = rpcRequest.getRequestDO();
