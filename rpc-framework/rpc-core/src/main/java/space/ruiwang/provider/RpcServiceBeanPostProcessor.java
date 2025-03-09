@@ -31,9 +31,7 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
 public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     private static final String HOST_NAME = "localhost";
     private static final int PORT = 9001;
-    @Resource
-    private ServiceRegister localServiceRegister;
-    @Resource
+    @Resource(name = "remoteServiceRegister")
     private ServiceRegister remoteServiceRegister;
     @Resource
     private TaskFactory taskFactory;
