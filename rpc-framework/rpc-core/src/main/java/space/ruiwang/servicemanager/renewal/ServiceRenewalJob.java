@@ -14,10 +14,10 @@ import space.ruiwang.domain.ServiceRegisterDO;
  */
 @Slf4j
 public class ServiceRenewalJob implements Runnable {
-    private final ServiceRenewalUtil serviceRenewalUtil;
-    private final ServiceRegisterDO service;
-    private final Long time;
-    private final TimeUnit timeUnit;
+    private ServiceRenewalUtil serviceRenewalUtil;
+    private ServiceRegisterDO service;
+    private Long time;
+    private TimeUnit timeUnit;
 
     public ServiceRenewalJob(ServiceRenewalUtil serviceRenewalUtil, ServiceRegisterDO service, Long time,
             TimeUnit timeUnit) {

@@ -76,18 +76,25 @@ public class RedissonOps implements RedisOpsTemplate {
         return (result != null && result == 1L);
     }
 
-    /**
-     * 操作非原子，可能导致set后生存时间被重置，而非剩余时间
-     */
     @Override
-    public void getSet(String key, String value) {
-        RBucket<String> bucket = redissonClient.getBucket(key);
-        long remainingTTL = bucket.remainTimeToLive();
-        if (remainingTTL > 0) {
-            bucket.getAndSet(value, remainingTTL, TimeUnit.MILLISECONDS);
-        } else {
-            bucket.getAndSet(value);
-        }
+    public String getSet(String key, String value) {
+        RScript script = redissonClient.getScript();
+        String luaScript = "local oldValue = redis.call('GET', KEYS[1])\n"
+                         + "local ttl = redis.call('PTTL', KEYS[1])\n"
+                         + "if ttl > 0 then\n"
+                         + "    redis.call('SET', KEYS[1], ARGV[1], 'PX', ttl)\n"
+                         + "else\n"
+                         + "    redis.call('SET', KEYS[1], ARGV[1])\n"
+                         + "end\n"
+                         + "return oldValue";
+        // 执行 Lua 脚本（模式为 EVAL，参数为 key + value）
+        return script.eval(
+                RScript.Mode.READ_WRITE,
+                luaScript,
+                RScript.ReturnType.VALUE,
+                Collections.singletonList(key), // KEYS 列表
+                value                           // ARGV 列表
+        );
     }
 
     @Override

@@ -1,7 +1,9 @@
 package space.ruiwang.serviceselector;
 
+import java.util.List;
+
 import space.ruiwang.domain.RpcRequest;
-import space.ruiwang.domain.ServiceInstance;
+import space.ruiwang.domain.ServiceRegisterDO;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -10,8 +12,9 @@ import space.ruiwang.domain.ServiceInstance;
 public interface ServiceSelector {
     /**
      * 获取具体服务
-     * @param rpcRequest
+     * @param rpcRequest rpc请求
      * @return hostName+port
      */
-    ServiceInstance selectService(RpcRequest rpcRequest);
+    ServiceRegisterDO selectService(RpcRequest rpcRequest);
+    ServiceRegisterDO selectOtherService(RpcRequest rpcRequest, List<ServiceRegisterDO> excludedServices);
 }

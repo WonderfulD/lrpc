@@ -34,8 +34,7 @@ public class ServiceRenewalUtil {
         boolean renewed = remoteServiceRegister.renew(service, time, timeUnit);
         String serviceKey = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
         if (renewed) {
-            log.warn("续约成功，开始从远程服务注册中心拉取该服务的所有实例镜像列表，服务:[{}]", serviceKey);
-            localServiceRegister.loadService(service.getServiceName(), service.getServiceVersion());
+            log.info("续约成功, 服务:[{}]", serviceKey);
             return true;
         }
         try {
@@ -45,8 +44,7 @@ public class ServiceRenewalUtil {
             service.setEndTime(now + renewedTime);
             log.warn("续约失败，重新注册该服务实例，服务:[{}]", service);
             remoteServiceRegister.register(generateNewService(service));
-            log.info("服务重新注册成功，开始从远程服务注册中心拉取所属服务的所有实例镜像列表，服务:[{}]", serviceKey);
-            localServiceRegister.loadService(service.getServiceName(), service.getServiceVersion());
+            log.info("服务重新注册成功，服务:[{}]", serviceKey);
             return true;
         } catch (Exception e) {
             log.error("续约&服务实例重新注册失败，服务:[{}]", service);

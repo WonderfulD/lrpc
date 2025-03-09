@@ -4,11 +4,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.Resource;
-
 import org.springframework.stereotype.Component;
 
-import cn.hutool.core.bean.BeanUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -21,32 +18,16 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToByteEncoder;
 import space.ruiwang.consumer.RpcConsumer;
-import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
-import space.ruiwang.serviceselector.ServiceSelector;
 import space.ruiwang.utils.KryoSerializer;
 
 @Component
 public class RpcClientNetty implements RpcConsumer {
-    @Resource
-    private ServiceSelector serviceSelector;
-
     @Override
-    public RpcResponseDO send(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
-        // 查找服务实例
-        ServiceInstance serviceInstance;
-        try {
-            serviceInstance = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));
-        } catch (Exception e) {
-            return RpcResponseDO.error(e.getMessage());
-        }
-        if (serviceInstance == null || BeanUtil.isEmpty(serviceInstance)) {
-            return RpcResponseDO.error("RPC调用失败，无法找到服务实例");
-        }
-
+    public RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
         String hostName = serviceInstance.getHostname();
         int port = serviceInstance.getPort();
 
@@ -75,7 +56,7 @@ public class RpcClientNetty implements RpcConsumer {
 
             // 异步等待响应，设置超时时间
             CompletableFuture<RpcResponseDO> responseFuture = handler.getResponseFuture();
-            RpcResponseDO response = responseFuture.get(5, TimeUnit.SECONDS);
+            RpcResponseDO response = responseFuture.get(rpcRequestConfig.getTimeout(), TimeUnit.SECONDS);
 
             return response;
         } catch (InterruptedException e) {

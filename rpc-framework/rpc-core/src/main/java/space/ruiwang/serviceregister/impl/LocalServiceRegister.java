@@ -102,10 +102,10 @@ public class LocalServiceRegister implements ServiceRegister {
         try {
             CopyOnWriteArrayList<ServiceRegisterDO> serviceList = new CopyOnWriteArrayList<>(serviceLoaderUtil.loadService(serviceKey));
             LOCAL_REGISTRATION.put(serviceKey, serviceList);
-            log.info("从远程注册中心拉取服务[{}]成功", serviceKey);
+            log.info("从远程注册中心拉取服务实例列表[{}]成功", serviceKey);
             return true;
         } catch (Exception e) {
-            log.error("从远程注册中心拉取服务[{}]失败, 错误信息: [{}]", serviceKey, e.getMessage());
+            log.error("从远程注册中心拉取服务实例列表[{}]失败, 错误信息: [{}]", serviceKey, e.getMessage());
             return false;
         }
     }

@@ -2,11 +2,13 @@ package space.ruiwang.servicefinder.impl;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Component;
 
+import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.loadbalance.LoadBalancer;
@@ -42,12 +44,26 @@ public class ServiceFinderImpl implements ServiceFinder {
     @Override
     public ServiceRegisterDO selectService(String serviceName, String serviceVersion, String loadBalancerType) {
         List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
-        return selectService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
+        return getService(serviceName, serviceVersion, allAvailableServices, loadBalancerType);
+    }
+
+    /**
+     * 根据服务名和服务版本号查找具体执行方法的服务，去掉传入的服务实例列表
+     */
+    @Override
+    public ServiceRegisterDO selectOtherService(String serviceName, String serviceVersion, String loadBalancerType,
+            List<ServiceRegisterDO> excludedServices) {
+        if (CollUtil.isEmpty(excludedServices)) {
+            return selectService(serviceName, serviceVersion, loadBalancerType);
+        }
+        List<ServiceRegisterDO> allAvailableServices = getAllAvailableServices(serviceName, serviceVersion);
+        List<ServiceRegisterDO> filtered =
+                allAvailableServices.stream().filter(e -> !excludedServices.contains(e)).collect(Collectors.toList());
+        return getService(serviceName, serviceVersion, filtered, loadBalancerType);
     }
 
     /**
      * 查找服务：先查找本地注册中心，如果找不到再查找远程注册中心
-     *
      * @param serviceName 服务名
      * @param serviceVersion 服务版本号
      * @return 服务对应的 Class 列表，找不到则返回null
@@ -57,32 +73,39 @@ public class ServiceFinderImpl implements ServiceFinder {
         // 1. 先从本地注册中心查找
         String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceName, serviceVersion);
         List<ServiceRegisterDO> registeredServices = localServiceRegister.search(serviceKey);
-        if (registeredServices != null && !registeredServices.isEmpty()) {
-            log.info("本地注册中心找到服务 [{}], 返回 已登记服务 列表: {}", serviceKey, registeredServices);
-            return filterUnExpiredServiceList(registeredServices);
+        if (CollUtil.isNotEmpty(registeredServices)) {
+            // 服务实例列表非空
+            List<ServiceRegisterDO> filtered = filterUnExpiredServiceList(registeredServices);
+            if (CollUtil.isNotEmpty(filtered)) {
+                // 未过期服务列表非空
+                log.info("本地注册中心找到可用服务实例列表 [{}], 返回 已登记服务 列表: {}", serviceKey, registeredServices);
+                return filtered;
+            }
         }
 
         // 2. 本地没有，去远程注册中心查找
-        log.warn("本地注册中心未找到服务 [{}], 正在尝试从远程注册中心查找...", serviceKey);
+        log.warn("本地注册中心未找到可用服务实例列表 [{}], 正在尝试从远程注册中心查找...", serviceKey);
         List<ServiceRegisterDO> remoteServices = remoteServiceRegister.search(serviceKey);
-        if (remoteServices != null && !remoteServices.isEmpty()) {
-            log.info("远程注册中心找到服务 [{}], 返回 远程服务中心登记的服务 列表: {}", serviceKey, remoteServices);
-            // 将远程服务同步到本地注册中心
-            remoteServices.forEach(localServiceRegister::register);
-            return filterUnExpiredServiceList(remoteServices);
+        if (CollUtil.isNotEmpty(remoteServices)) {
+            List<ServiceRegisterDO> filtered = filterUnExpiredServiceList(remoteServices);
+            if (CollUtil.isNotEmpty(filtered)) {
+                log.info("远程注册中心找到可用服务 [{}], 返回 远程服务中心登记的服务 列表: {}", serviceKey, remoteServices);
+                // 将远程服务同步到本地注册中心
+                localServiceRegister.register(filtered.get(0));
+                return filtered;
+            }
         }
 
         // 3. 本地和远程都没有找到
-        log.error("本地和远程注册中心皆未找到服务 [{}]", serviceKey);
+        log.error("本地和远程注册中心皆未找到可用服务实例 [{}]", serviceKey);
         return null;
     }
 
     /**
      * 从所有可用服务中获取具体执行方法的服务
      * @param availableServices 所有可用服务
-     * @return
      */
-    private static ServiceRegisterDO selectService(String serviceName, String serviceVersion, List<ServiceRegisterDO> availableServices,
+    private static ServiceRegisterDO getService(String serviceName, String serviceVersion, List<ServiceRegisterDO> availableServices,
             String loadBalancerType) {
         // 负载均衡
         LoadBalancer loadBalancer;
@@ -99,8 +122,6 @@ public class ServiceFinderImpl implements ServiceFinder {
 
     /**
      * 获取未过期服务列表
-     * @param serviceList
-     * @return
      */
     private List<ServiceRegisterDO> filterUnExpiredServiceList(List<ServiceRegisterDO> serviceList) {
         return serviceStatusUtil.filterUnExpired(serviceList);

@@ -6,4 +6,6 @@ package space.ruiwang.tolerant;
  */
 public interface TolerantStrategies {
     String FAIL_FAST = "FailFast";
+    String FAIL_OVER = "Failover";
+    String FAIL_SAFE = "Failsafe";
 }
