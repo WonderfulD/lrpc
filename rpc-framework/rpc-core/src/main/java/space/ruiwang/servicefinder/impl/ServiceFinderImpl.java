@@ -91,7 +91,7 @@ public class ServiceFinderImpl implements ServiceFinder {
             if (CollUtil.isNotEmpty(filtered)) {
                 log.info("远程注册中心找到可用服务 [{}], 返回 远程服务中心登记的服务 列表: {}", serviceKey, remoteServices);
                 // 将远程服务同步到本地注册中心
-                remoteServices.forEach(localServiceRegister::register);
+                localServiceRegister.register(filtered.get(0));
                 return filtered;
             }
         }
