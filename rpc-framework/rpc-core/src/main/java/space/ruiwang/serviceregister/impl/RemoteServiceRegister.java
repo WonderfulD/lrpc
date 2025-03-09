@@ -1,11 +1,14 @@
 package space.ruiwang.serviceregister.impl;
 
+import static space.ruiwang.constants.RedisConstants.SERVICE_CLEANER_KEY;
 import static space.ruiwang.constants.RedisConstants.SERVICE_CLUSTER_TTL_MIN;
 import static space.ruiwang.constants.RedisConstants.SERVICE_TTL_MIL;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -44,9 +47,10 @@ public class RemoteServiceRegister implements ServiceRegister {
     @Override
     public boolean register(ServiceRegisterDO service) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
         try {
-            List<ServiceRegisterDO> registeredServices = null;
-            String registeredServicesStr = redissonOps.get(key);
+            List<ServiceRegisterDO> registeredServices;
+            String registeredServicesStr = redissonOps.get(redisKey);
             if (StrUtil.isEmpty(registeredServicesStr)) {
                 // 当前key没有任何服务实例
                 registeredServices = new ArrayList<>();
@@ -66,7 +70,8 @@ public class RemoteServiceRegister implements ServiceRegister {
                 service.setEndTime(new Date().getTime() + SERVICE_TTL_MIL);
             }
             registeredServices.add(service);
-            redissonOps.setWithExpiration(key, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
+            redissonOps.setWithExpiration(redisKey, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
+            add2RegisteredServiceList(service);
             log.info("远程注册中心：服务实例注册成功。服务名: [{}]， 注册信息: [{}]", key, service);
         } catch (Exception e) {
             log.error("远程注册中心：注册服务实例时发生异常。服务名: [{}], 异常信息: [{}]", service.getServiceName(), e.getMessage());
@@ -82,7 +87,8 @@ public class RemoteServiceRegister implements ServiceRegister {
     @Override
     public boolean deregister(ServiceRegisterDO service) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
-        List<ServiceRegisterDO> serviceList = search(key);
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
+        List<ServiceRegisterDO> serviceList = search(redisKey);
         if (serviceList == null) {
             log.warn("远程注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
             return false;
@@ -90,7 +96,7 @@ public class RemoteServiceRegister implements ServiceRegister {
         // 过滤出没有当前服务实例的服务实例列表
         List<ServiceRegisterDO> otherServices = serviceList.stream().filter(e -> !e.getUuid().equals(service.getUuid())).collect(Collectors.toList());
         // 更新redis
-        redissonOps.getSet(key, JSONUtil.toJsonStr(otherServices));
+        redissonOps.getSet(redisKey, JSONUtil.toJsonStr(otherServices));
         log.info("远程注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]",
                 key, service);
         return true;
@@ -105,7 +111,8 @@ public class RemoteServiceRegister implements ServiceRegister {
      */
     public boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
-        List<ServiceRegisterDO> foundServices = search(key);
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
+        List<ServiceRegisterDO> foundServices = search(redisKey);
         if (CollUtil.isEmpty(foundServices)) {
             log.warn("远程注册中心：续约失败。未找到服务 [{}]", key);
             return false;
@@ -128,7 +135,7 @@ public class RemoteServiceRegister implements ServiceRegister {
         Long endTime = filteredService.getEndTime();
         long extraTTL = timeUnit.toMillis(time);
         long newEndTime = extraTTL + endTime;
-        boolean renewed = redissonOps.renewWithOLock(key, uuid, newEndTime, extraTTL);
+        boolean renewed = redissonOps.renewWithOLock(redisKey, uuid, newEndTime, extraTTL);
         if (!renewed) {
             log.warn("远程注册中心：续约失败，实例不存在或UUID不匹配");
             return false;
@@ -148,5 +155,17 @@ public class RemoteServiceRegister implements ServiceRegister {
             return null;
         }
         return JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
+    }
+
+    public void add2RegisteredServiceList(ServiceRegisterDO service) {
+        Set<String> serviceKeyList;
+        String serviceKeysStr = redissonOps.get(SERVICE_CLEANER_KEY);
+        if (StrUtil.isEmpty(serviceKeysStr)) {
+            serviceKeyList = new HashSet<>();
+        } else {
+            serviceKeyList = JSONUtil.toBean(serviceKeysStr, new TypeReference<>() { }, false);
+        }
+        serviceKeyList.add(RpcServiceKeyBuilder.buildServiceKey(service));
+        redissonOps.set(SERVICE_CLEANER_KEY, JSONUtil.toJsonStr(serviceKeyList));
     }
 }

@@ -76,9 +76,6 @@ public class RedissonOps implements RedisOpsTemplate {
         return (result != null && result == 1L);
     }
 
-    /**
-     * 操作非原子，可能导致set后生存时间被重置，而非剩余时间
-     */
     @Override
     public String getSet(String key, String value) {
         RScript script = redissonClient.getScript();

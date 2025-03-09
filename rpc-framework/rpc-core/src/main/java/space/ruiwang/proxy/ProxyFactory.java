@@ -78,9 +78,7 @@ public class ProxyFactory {
             }
             try {
                 // 发送Rpc请求
-                String serviceAddr = service.getServiceAddr();
-                Integer port = service.getPort();
-                ServiceInstance serviceInstance = new ServiceInstance(serviceAddr, port);
+                ServiceInstance serviceInstance = new ServiceInstance(service);
                 RpcResponseDO rpcResponseDO = rpcConsumer.send(serviceInstance, rpcRequestDO, rpcRequestConfig);
                 return checkRpcResponse(rpcResponseDO, rpcRequestDO);
             } catch (Exception e) {
