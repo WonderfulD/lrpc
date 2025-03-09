@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import cn.hutool.core.collection.CollUtil;
@@ -13,10 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.loadbalance.LoadBalancer;
 import space.ruiwang.loadbalance.impl.RandomLoadBalancer;
-import space.ruiwang.servicefinder.ServiceFinder;
-import space.ruiwang.servicemanager.ServiceStatusUtil;
-import space.ruiwang.serviceregister.ServiceRegister;
+import space.ruiwang.register.impl.ILocalServiceRegister;
+import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.servicefinder.IServiceFinder;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
+import space.ruiwang.utils.ServiceStatusUtil;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -24,13 +26,13 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  */
 @Slf4j
 @Component
-public class ServiceFinderImpl implements ServiceFinder {
+public class ServiceFinderImpl implements IServiceFinder {
 
-    @Resource
-    private ServiceRegister localServiceRegister;
+    @Autowired
+    private ILocalServiceRegister localServiceRegister;
 
-    @Resource
-    private ServiceRegister remoteServiceRegister;
+    @Autowired
+    private IRemoteServiceRegister remoteServiceRegister;
 
     @Resource
     private ServiceStatusUtil serviceStatusUtil;
@@ -85,7 +87,8 @@ public class ServiceFinderImpl implements ServiceFinder {
 
         // 2. 本地没有，去远程注册中心查找
         log.warn("本地注册中心未找到可用服务实例列表 [{}], 正在尝试从远程注册中心查找...", serviceKey);
-        List<ServiceRegisterDO> remoteServices = remoteServiceRegister.search(serviceKey);
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(serviceKey);
+        List<ServiceRegisterDO> remoteServices = remoteServiceRegister.search(redisKey);
         if (CollUtil.isNotEmpty(remoteServices)) {
             List<ServiceRegisterDO> filtered = filterUnExpiredServiceList(remoteServices);
             if (CollUtil.isNotEmpty(filtered)) {

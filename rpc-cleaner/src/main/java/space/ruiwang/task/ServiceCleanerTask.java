@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +19,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.servicemanager.ServiceStatusUtil;
-import space.ruiwang.serviceregister.ServiceRegister;
+import space.ruiwang.register.impl.IRemoteServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
+import space.ruiwang.utils.ServiceStatusUtil;
 import space.ruiwang.utils.redisops.impl.RedissonOps;
 
 /**
@@ -32,9 +33,9 @@ import space.ruiwang.utils.redisops.impl.RedissonOps;
 public class ServiceCleanerTask {
     @Resource
     private RedissonOps redissonOps;
-    @Resource(name = "remoteServiceRegister")
-    private ServiceRegister remoteServiceRegister;
-    @Resource
+    @Autowired
+    private IRemoteServiceRegister remoteServiceRegister;
+    @Autowired
     private ServiceStatusUtil serviceStatusUtil;
     @Scheduled(cron = "0 */10 * * * *")
     public void taskWithCron() {

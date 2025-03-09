@@ -12,8 +12,8 @@
     <artifactId>rpc-transport</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>tomcat</module>
-        <module>netty</module>
+        <module>rpc-transport-tomcat</module>
+        <module>rpc-transport-netty</module>
     </modules>
 
     <properties>

@@ -5,13 +5,13 @@ import java.util.List;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.tolerant.Tolerant;
+import space.ruiwang.tolerant.ITolerant;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-03-08
  */
-public class Failsafe implements Tolerant {
+public class Failsafe implements ITolerant {
     @Override
     public void handler(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig,
             List<ServiceRegisterDO> excludedServices, ServiceRegisterDO service) {
