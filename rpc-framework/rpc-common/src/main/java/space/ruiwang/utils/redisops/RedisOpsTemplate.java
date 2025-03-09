@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 public interface RedisOpsTemplate {
     void set(String key, String value);
     void setWithExpiration(String key, String value, long ttl, TimeUnit timeUnit);
-    void getSet(String key, String value);
+    String getSet(String key, String value);
     String get(String key);
     boolean delete(String key);
     boolean hasKey(String key);
