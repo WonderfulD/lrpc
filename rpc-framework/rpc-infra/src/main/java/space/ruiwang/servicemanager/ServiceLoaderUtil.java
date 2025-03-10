@@ -1,4 +1,4 @@
-package space.ruiwang.utils;
+package space.ruiwang.servicemanager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,8 @@ import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.utils.redisops.impl.RedissonOps;
+import space.ruiwang.redisconfig.impl.RedissonOps;
+import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -23,7 +24,8 @@ public class ServiceLoaderUtil {
     private RedissonOps redissonOps;
     public List<ServiceRegisterDO> loadService(String serviceKey) {
         List<ServiceRegisterDO> result;
-        String serviceListStr = redissonOps.get(serviceKey);
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(serviceKey);
+        String serviceListStr = redissonOps.get(redisKey);
         if (StrUtil.isEmpty(serviceListStr)) {
             // 当前key没有任何服务实例
             result = new ArrayList<>();

@@ -20,9 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcService;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.job.JobFactory;
+import space.ruiwang.servicemanager.ServiceRegisterUtil;
 import space.ruiwang.provider.RpcServer;
-import space.ruiwang.register.IServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
@@ -72,7 +72,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
 
             // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
             try {
-                IServiceRegister.serviceImplRegister();
+                ServiceRegisterUtil.serviceImplRegister();
             } catch (Exception e) {
                 log.warn("Failed to register service implementation", e);
             }

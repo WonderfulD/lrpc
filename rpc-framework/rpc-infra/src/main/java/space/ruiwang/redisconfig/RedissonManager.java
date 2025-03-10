@@ -1,4 +1,4 @@
-package space.ruiwang.utils;
+package space.ruiwang.redisconfig;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

@@ -1,4 +1,4 @@
-package space.ruiwang.utils.redisops;
+package space.ruiwang.redisconfig;
 
 import java.util.concurrent.TimeUnit;
 

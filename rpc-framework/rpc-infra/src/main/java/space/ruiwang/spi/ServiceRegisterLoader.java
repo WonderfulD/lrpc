@@ -7,8 +7,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import space.ruiwang.register.impl.ILocalServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

@@ -1,4 +1,4 @@
-package space.ruiwang.loadbalance;
+package space.ruiwang.strategies;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.register.impl.ILocalServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

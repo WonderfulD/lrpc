@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.loadbalance.LoadBalancer;
 import space.ruiwang.loadbalance.impl.RandomLoadBalancer;
-import space.ruiwang.register.impl.ILocalServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
 import space.ruiwang.servicefinder.IServiceFinder;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.ServiceStatusUtil;
@@ -74,29 +74,22 @@ public class ServiceFinderImpl implements IServiceFinder {
     public List<ServiceRegisterDO> getAllAvailableServices(String serviceName, String serviceVersion) {
         // 1. 先从本地注册中心查找
         String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceName, serviceVersion);
-        List<ServiceRegisterDO> registeredServices = localServiceRegister.search(serviceKey);
-        if (CollUtil.isNotEmpty(registeredServices)) {
-            // 服务实例列表非空
-            List<ServiceRegisterDO> filtered = filterUnExpiredServiceList(registeredServices);
-            if (CollUtil.isNotEmpty(filtered)) {
-                // 未过期服务列表非空
-                log.info("本地注册中心找到可用服务实例列表 [{}], 返回 已登记服务 列表: {}", serviceKey, registeredServices);
-                return filtered;
-            }
+        List<ServiceRegisterDO> localServices = localServiceRegister.search(serviceKey);
+        if (CollUtil.isNotEmpty(localServices)) {
+            // 本地可用服务实例列表非空
+            log.info("本地注册中心找到可用服务实例列表 [{}], 返回 已登记服务 列表: {}", serviceKey, localServices);
+            return localServices;
         }
 
         // 2. 本地没有，去远程注册中心查找
         log.warn("本地注册中心未找到可用服务实例列表 [{}], 正在尝试从远程注册中心查找...", serviceKey);
-        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(serviceKey);
-        List<ServiceRegisterDO> remoteServices = remoteServiceRegister.search(redisKey);
+        List<ServiceRegisterDO> remoteServices = remoteServiceRegister.search(serviceKey);
         if (CollUtil.isNotEmpty(remoteServices)) {
-            List<ServiceRegisterDO> filtered = filterUnExpiredServiceList(remoteServices);
-            if (CollUtil.isNotEmpty(filtered)) {
-                log.info("远程注册中心找到可用服务 [{}], 返回 远程服务中心登记的服务 列表: {}", serviceKey, remoteServices);
-                // 将远程服务同步到本地注册中心
-                localServiceRegister.register(filtered.get(0));
-                return filtered;
-            }
+            // 远程可用服务实例列表非空
+            log.info("远程注册中心找到可用服务 [{}], 返回 已登记服务 列表: {}", serviceKey, remoteServices);
+            // 将远程服务同步到本地注册中心
+            localServiceRegister.register(remoteServices.get(0));
+            return remoteServices;
         }
 
         // 3. 本地和远程都没有找到
@@ -121,12 +114,5 @@ public class ServiceFinderImpl implements IServiceFinder {
             loadBalancer = new RandomLoadBalancer(serviceName, serviceVersion);
         }
         return loadBalancer.selectService(availableServices);
-    }
-
-    /**
-     * 获取未过期服务列表
-     */
-    private List<ServiceRegisterDO> filterUnExpiredServiceList(List<ServiceRegisterDO> serviceList) {
-        return serviceStatusUtil.filterUnExpired(serviceList);
     }
 }

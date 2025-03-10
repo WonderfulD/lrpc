@@ -24,7 +24,7 @@ import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.register.impl.ILocalServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
 import space.ruiwang.serviceselector.IServiceSelector;
 import space.ruiwang.tolerant.ITolerant;
 

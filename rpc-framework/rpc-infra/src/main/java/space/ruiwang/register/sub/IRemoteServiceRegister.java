@@ -1,4 +1,4 @@
-package space.ruiwang.register.impl;
+package space.ruiwang.register.sub;
 
 import java.util.concurrent.TimeUnit;
 

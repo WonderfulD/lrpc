@@ -5,8 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import space.ruiwang.loadbalance.LoadBalancerStrategies;
-import space.ruiwang.tolerant.TolerantStrategies;
+import space.ruiwang.strategies.LoadBalancerStrategies;
+import space.ruiwang.strategies.TolerantStrategies;
 
 
 /**

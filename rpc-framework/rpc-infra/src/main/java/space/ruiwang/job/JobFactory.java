@@ -8,13 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.register.impl.ILocalServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
+import space.ruiwang.servicemanager.ServiceLoaderUtil;
 import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveJob;
 import space.ruiwang.servicemanager.removal.ServiceExpiredRemoveUtil;
 import space.ruiwang.servicemanager.renewal.ServiceRenewalJob;
 import space.ruiwang.servicemanager.renewal.ServiceRenewalUtil;
-import space.ruiwang.utils.ServiceLoaderUtil;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

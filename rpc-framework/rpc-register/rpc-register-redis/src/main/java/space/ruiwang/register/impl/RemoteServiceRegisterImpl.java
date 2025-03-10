@@ -23,9 +23,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.redisconfig.impl.RedissonOps;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
+import space.ruiwang.servicemanager.ServiceRegisterUtil;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.ServiceStatusUtil;
-import space.ruiwang.utils.redisops.impl.RedissonOps;
 
 
 /**
@@ -47,7 +49,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
      */
     @Override
     public boolean register(ServiceRegisterDO service) {
-        String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
+        String key = RpcServiceKeyBuilder.buildServiceKey(service);
         String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
         try {
             List<ServiceRegisterDO> registeredServices;
@@ -61,7 +63,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
                 registeredServices = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
             }
 
-            if (ifRegistered(registeredServices, service)) {
+            if (ServiceRegisterUtil.ifRegistered(registeredServices, service)) {
                 // 服务实例已被注册过
                 throw new RuntimeException("该服务实例已被注册");
             }
@@ -88,8 +90,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
     @Override
     public boolean deregister(ServiceRegisterDO service) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
-        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
-        List<ServiceRegisterDO> serviceList = search(redisKey);
+        List<ServiceRegisterDO> serviceList = search(key);
         if (serviceList == null) {
             log.warn("远程注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
             return false;
@@ -97,6 +98,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
         // 过滤出没有当前服务实例的服务实例列表
         List<ServiceRegisterDO> otherServices = serviceList.stream().filter(e -> !e.getUuid().equals(service.getUuid())).collect(Collectors.toList());
         // 更新redis
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
         redissonOps.getSet(redisKey, JSONUtil.toJsonStr(otherServices));
         log.info("远程注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]",
                 key, service);
@@ -112,8 +114,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
      */
     public boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         String key = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
-        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
-        List<ServiceRegisterDO> foundServices = search(redisKey);
+        List<ServiceRegisterDO> foundServices = search(key);
         if (CollUtil.isEmpty(foundServices)) {
             log.warn("远程注册中心：续约失败。未找到服务 [{}]", key);
             return false;
@@ -136,6 +137,7 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
         Long endTime = filteredService.getEndTime();
         long extraTTL = timeUnit.toMillis(time);
         long newEndTime = extraTTL + endTime;
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
         boolean renewed = redissonOps.renewWithOLock(redisKey, uuid, newEndTime, extraTTL);
         if (!renewed) {
             log.warn("远程注册中心：续约失败，实例不存在或UUID不匹配");
@@ -151,11 +153,13 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
      */
     @Override
     public List<ServiceRegisterDO> search(String serviceKey) {
-        String registeredServicesStr = redissonOps.get(serviceKey);
+        String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(serviceKey);
+        String registeredServicesStr = redissonOps.get(redisKey);
         if (StrUtil.isEmpty(registeredServicesStr)) {
             return null;
         }
-        return JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
+        List<ServiceRegisterDO> serviceList = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
+        return filterUnExpiredServiceList(serviceList);
     }
 
     public void add2RegisteredServiceList(ServiceRegisterDO service) {
@@ -168,5 +172,15 @@ public class RemoteServiceRegisterImpl implements IRemoteServiceRegister {
         }
         serviceKeyList.add(RpcServiceKeyBuilder.buildServiceKey(service));
         redissonOps.set(SERVICE_CLEANER_KEY, JSONUtil.toJsonStr(serviceKeyList));
+    }
+
+    /**
+     * 获取未过期服务列表
+     */
+    private List<ServiceRegisterDO> filterUnExpiredServiceList(List<ServiceRegisterDO> serviceList) {
+        if (CollUtil.isEmpty(serviceList)) {
+            return new ArrayList<>();
+        }
+        return serviceStatusUtil.filterUnExpired(serviceList);
     }
 }

@@ -37,4 +37,5 @@ build/
 # Configuration file
 rpc-consumer/src/main/resources/application.yml
 rpc-provider/src/main/resources/application.yml
+rpc-provider2/src/main/resources/application.yml
 rpc-cleaner/src/main/resources/application.yml
