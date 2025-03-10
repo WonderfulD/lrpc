@@ -1,4 +1,4 @@
-package space.ruiwang.tolerant;
+package space.ruiwang.strategies;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

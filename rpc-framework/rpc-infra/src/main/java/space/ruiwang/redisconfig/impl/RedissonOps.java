@@ -1,4 +1,4 @@
-package space.ruiwang.utils.redisops.impl;
+package space.ruiwang.redisconfig.impl;
 
 
 import java.util.Collections;
@@ -12,7 +12,7 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
-import space.ruiwang.utils.redisops.RedisOpsTemplate;
+import space.ruiwang.redisconfig.RedisOpsTemplate;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

@@ -1,6 +1,5 @@
-package space.ruiwang.register.impl;
+package space.ruiwang.register.sub;
 
-import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.register.IServiceRegister;
 
 /**
@@ -8,7 +7,7 @@ import space.ruiwang.register.IServiceRegister;
  * Created on 2025-03-10
  */
 public interface ILocalServiceRegister extends IServiceRegister {
-    boolean deregister(ServiceRegisterDO serviceRegisterDO);
     boolean loadService(String serviceName, String serviceVersion);
+    boolean loadService(String serviceKey);
 
 }

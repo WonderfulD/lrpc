@@ -3,7 +3,7 @@ package space.ruiwang.servicemanager.removal;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.register.IServiceRegister;
-import space.ruiwang.utils.ServiceLoaderUtil;
+import space.ruiwang.servicemanager.ServiceLoaderUtil;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>

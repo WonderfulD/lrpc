@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.register.impl.ILocalServiceRegister;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.register.sub.ILocalServiceRegister;
+import space.ruiwang.register.sub.IRemoteServiceRegister;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
@@ -27,9 +27,6 @@ public class ServiceRenewalUtil {
     @Resource
     private IRemoteServiceRegister remoteServiceRegister;
 
-    @Resource
-    private ILocalServiceRegister localServiceRegister;
-
     public boolean renew(ServiceRegisterDO service, Long time, TimeUnit timeUnit) {
         boolean renewed = remoteServiceRegister.renew(service, time, timeUnit);
         String serviceKey = RpcServiceKeyBuilder.buildServiceKey(service.getServiceName(), service.getServiceVersion());
@@ -43,9 +40,14 @@ public class ServiceRenewalUtil {
             long renewedTime = timeUnit.toMillis(time);
             service.setEndTime(now + renewedTime);
             log.warn("续约失败，重新注册该服务实例，服务:[{}]", service);
-            remoteServiceRegister.register(generateNewService(service));
-            log.info("服务重新注册成功，服务:[{}]", serviceKey);
-            return true;
+            boolean registered = remoteServiceRegister.register(generateNewService(service));
+            if (registered) {
+                log.info("服务重新注册成功，服务:[{}]", serviceKey);
+                return true;
+            } else {
+                log.info("服务重新注册失败，服务:[{}]", serviceKey);
+                return false;
+            }
         } catch (Exception e) {
             log.error("续约&服务实例重新注册失败，服务:[{}]", service);
             return false;

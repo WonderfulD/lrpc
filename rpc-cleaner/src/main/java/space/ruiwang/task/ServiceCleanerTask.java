@@ -19,10 +19,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
-import space.ruiwang.register.impl.IRemoteServiceRegister;
+import space.ruiwang.redisconfig.impl.RedissonOps;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 import space.ruiwang.utils.ServiceStatusUtil;
-import space.ruiwang.utils.redisops.impl.RedissonOps;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -33,8 +32,6 @@ import space.ruiwang.utils.redisops.impl.RedissonOps;
 public class ServiceCleanerTask {
     @Resource
     private RedissonOps redissonOps;
-    @Autowired
-    private IRemoteServiceRegister remoteServiceRegister;
     @Autowired
     private ServiceStatusUtil serviceStatusUtil;
     @Scheduled(cron = "0 */10 * * * *")
@@ -61,7 +58,11 @@ public class ServiceCleanerTask {
 
     private void clean(String serviceKey) {
         String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(serviceKey);
-        List<ServiceRegisterDO> serviceList = remoteServiceRegister.search(redisKey);
+        List<ServiceRegisterDO> serviceList = search(redisKey);
+        if (CollUtil.isEmpty(serviceList)) {
+            log.info("没有需要清理的过期服务实例，服务：[{}]", serviceKey);
+            return;
+        }
         List<ServiceRegisterDO> filtered = serviceStatusUtil.filterUnExpired(serviceList);
         redissonOps.getSet(redisKey, JSONUtil.toJsonStr(filtered));
         if (serviceList.size() != filtered.size()) {
@@ -75,5 +76,16 @@ public class ServiceCleanerTask {
     private void shutdown() {
         redissonOps.delete(SERVICE_CLEANER_KEY);
         log.info("过期服务实例清理服务下线，清除Redis对应内容");
+    }
+
+    /**
+     * 查找key已注册的实例
+     */
+    private List<ServiceRegisterDO> search(String serviceKey) {
+        String registeredServicesStr = redissonOps.get(serviceKey);
+        if (StrUtil.isEmpty(registeredServicesStr)) {
+            return null;
+        }
+        return JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
     }
 }

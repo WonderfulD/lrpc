@@ -1,23 +1,18 @@
-package space.ruiwang.register.impl;
+package space.ruiwang.impl;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.annotation.Resource;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceRegisterDO;
 import space.ruiwang.register.sub.ILocalServiceRegister;
-import space.ruiwang.servicemanager.ServiceLoaderUtil;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
-import space.ruiwang.utils.ServiceStatusUtil;
 
 
 /**
@@ -48,12 +43,8 @@ public class LocalServiceRegisterImpl implements ILocalServiceRegister {
      *   - 在写操作不算非常频繁的场景下，可简化并发处理
      */
     private static final Map<String, CopyOnWriteArrayList<ServiceRegisterDO>> LOCAL_REGISTRATION = new ConcurrentHashMap<>();
-
-    @Resource
-    private ServiceLoaderUtil serviceLoaderUtil;
-
-    @Resource
-    private ServiceStatusUtil serviceStatusUtil;
+    @Autowired
+    private ServiceUtil serviceUtil;
 
 
     /**
@@ -79,22 +70,22 @@ public class LocalServiceRegisterImpl implements ILocalServiceRegister {
      */
     public boolean deregister(ServiceRegisterDO serviceRegisterDO) {
         try {
-            String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceRegisterDO.getServiceName(), serviceRegisterDO.getServiceVersion());
-            CopyOnWriteArrayList<ServiceRegisterDO> serviceList = LOCAL_REGISTRATION.get(serviceKey);
+            String key = RpcServiceKeyBuilder.buildServiceKey(serviceRegisterDO.getServiceName(), serviceRegisterDO.getServiceVersion());
+            CopyOnWriteArrayList<ServiceRegisterDO> serviceList = LOCAL_REGISTRATION.get(key);
             if (serviceList != null) {
                 // 移除指定ServiceRegisterDO
                 boolean removed = serviceList.remove(serviceRegisterDO);
 
                 // 如果该服务下已无ServiceRegisterDO, 就把这个Key也移除
                 if (serviceList.isEmpty()) {
-                    LOCAL_REGISTRATION.remove(serviceKey);
+                    LOCAL_REGISTRATION.remove(key);
                 }
 
-                log.info("本地注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]", serviceKey, serviceRegisterDO);
+                log.info("本地注册中心：服务实例下线完成。服务 [{}] 下线信息 [{}]", key, serviceRegisterDO);
 
                 return removed;
             } else {
-                log.warn("本地注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", serviceKey);
+                log.warn("本地注册中心：服务实例下线失败。尝试下线 [{}] 时未找到对应服务实例列表", key);
                 return false;
             }
         } catch (Exception e) {
@@ -114,7 +105,7 @@ public class LocalServiceRegisterImpl implements ILocalServiceRegister {
     @Override
     public boolean loadService(String serviceKey) {
         try {
-            CopyOnWriteArrayList<ServiceRegisterDO> serviceList = new CopyOnWriteArrayList<>(serviceLoaderUtil.loadService(serviceKey));
+            CopyOnWriteArrayList<ServiceRegisterDO> serviceList = new CopyOnWriteArrayList<>(serviceUtil.loadServices(serviceKey));
             LOCAL_REGISTRATION.put(serviceKey, serviceList);
             log.info("从远程注册中心拉取服务实例列表[{}]成功", serviceKey);
             return true;
@@ -132,16 +123,6 @@ public class LocalServiceRegisterImpl implements ILocalServiceRegister {
      */
     @Override
     public List<ServiceRegisterDO> search(String serviceKey) {
-        return filterUnExpiredServiceList(LOCAL_REGISTRATION.get(serviceKey));
-    }
-
-    /**
-     * 获取未过期服务列表
-     */
-    private List<ServiceRegisterDO> filterUnExpiredServiceList(List<ServiceRegisterDO> serviceList) {
-        if (CollUtil.isEmpty(serviceList)) {
-            return new ArrayList<>();
-        }
-        return serviceStatusUtil.filterUnExpired(serviceList);
+        return LOCAL_REGISTRATION.get(serviceKey);
     }
 }
