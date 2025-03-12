@@ -33,7 +33,7 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
 @Configuration
 public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     private static final String HOST_NAME = "localhost";
-    private static final int PORT = 9001;
+    private static final int PORT = 9002;
     @Autowired
     private IRemoteServiceRegister remoteServiceRegister;
     @Resource
