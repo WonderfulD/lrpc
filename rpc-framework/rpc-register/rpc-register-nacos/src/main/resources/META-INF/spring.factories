@@ -1,2 +1,0 @@
-space.ruiwang.register.impl.ILocalServiceRegister=space.ruiwang.register.impl.LocalServiceRegisterImpl
-space.ruiwang.register.impl.IRemoteServiceRegister=space.ruiwang.register.impl.RemoteServiceRegisterImpl

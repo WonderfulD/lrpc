@@ -17,13 +17,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToByteEncoder;
-import space.ruiwang.consumer.RpcConsumer;
+import space.ruiwang.api.transport.RpcConsumer;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.utils.KryoSerializer;
 
+/**
+ * @author wangrui <wangrui45@kuaishou.com>
+ * Created on 2025-03-10
+ */
 @Component
 public class RpcClientNetty implements RpcConsumer {
     @Override
