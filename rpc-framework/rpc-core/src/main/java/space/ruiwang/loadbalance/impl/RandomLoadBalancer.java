@@ -3,7 +3,7 @@ package space.ruiwang.loadbalance.impl;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.loadbalance.LoadBalancer;
 
 /**
@@ -22,7 +22,7 @@ public class RandomLoadBalancer implements LoadBalancer {
     }
 
     @Override
-    public ServiceRegisterDO selectService(List<ServiceRegisterDO> registeredServices) {
+    public ServiceMetaData selectService(List<ServiceMetaData> registeredServices) {
         if (registeredServices == null || registeredServices.isEmpty()) {
             throw new RuntimeException("无可用实例");
         }
