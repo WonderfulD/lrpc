@@ -13,7 +13,6 @@
         <module>rpc-interface</module>
         <module>rpc-consumer</module>
         <module>rpc-provider</module>
-        <module>rpc-cleaner</module>
         <module>rpc-provider2</module>
     </modules>
 

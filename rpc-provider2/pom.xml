@@ -20,16 +20,15 @@
     <dependencies>
         <dependency>
             <groupId>space.ruiwang</groupId>
-            <artifactId>rpc-core</artifactId>
+            <artifactId>rpc-register-redis</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>space.ruiwang</groupId>
-            <artifactId>rpc-register-nacos</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
+        <!--        <dependency>-->
+        <!--            <groupId>space.ruiwang</groupId>-->
+        <!--            <artifactId>rpc-register-nacos</artifactId>-->
+        <!--            <version>1.0-SNAPSHOT</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>space.ruiwang</groupId>
             <artifactId>rpc-interface</artifactId>
@@ -40,6 +39,14 @@
             <groupId>space.ruiwang</groupId>
             <artifactId>rpc-transport-netty</artifactId>
             <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>2.7.18</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
