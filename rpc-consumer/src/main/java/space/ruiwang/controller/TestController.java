@@ -1,6 +1,6 @@
 package space.ruiwang.controller;
 
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,7 +16,7 @@ public class TestController {
     @RpcReference
     private TestService testService;
 
-    @PostMapping("/calc")
+    @GetMapping("/calc")
     public AjaxResult test(Integer a, Integer b) {
         try {
             String result = testService.calc(a, b);
