@@ -12,6 +12,8 @@ public class TestServiceImpl implements TestService {
     @Override
     public String calc(Integer a, Integer b) {
         int c = a + b;
+        // 模拟错误
+        int i = 1 / 0;
         return "a + b 的和是: " + c;
     }
 }
