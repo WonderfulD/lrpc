@@ -13,14 +13,15 @@ import org.apache.catalina.core.StandardHost;
 import org.apache.catalina.startup.Tomcat;
 
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.provider.RpcServer;
+import space.ruiwang.api.transport.RpcProvider;
+
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-11
  */
 @Slf4j
-public class TomcatServer implements RpcServer {
+public class TomcatServer implements RpcProvider {
 
     @Override
     public void start(String hostName, int port) {

@@ -5,8 +5,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.consumer.RpcConsumer;
+import space.ruiwang.api.transport.RpcConsumer;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDO;
 import space.ruiwang.domain.RpcResponseDO;
@@ -18,6 +20,7 @@ import space.ruiwang.utils.KryoSerializer;
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-12
  */
+@Component
 @Slf4j
 public class SimpleHttpClient implements RpcConsumer {
     @Override

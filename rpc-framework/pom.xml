@@ -14,8 +14,8 @@
     <modules>
         <module>rpc-common</module>
         <module>rpc-core</module>
+        <module>rpc-spring-boot-starter</module>
         <module>rpc-transport</module>
-        <module>rpc-infra</module>
         <module>rpc-register</module>
     </modules>
 

@@ -17,7 +17,7 @@ public class ServiceInstance implements Serializable {
     private String hostname;
     private int port;
 
-    public ServiceInstance(ServiceRegisterDO service) {
+    public ServiceInstance(ServiceMetaData service) {
         this.hostname = service.getServiceAddr();
         this.port = service.getPort();
     }

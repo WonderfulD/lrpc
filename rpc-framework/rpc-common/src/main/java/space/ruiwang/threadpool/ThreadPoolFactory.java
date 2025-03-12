@@ -29,7 +29,7 @@ public class ThreadPoolFactory {
                     8, // 核心线程数
                     r -> {
                         Thread t = new Thread(r);
-                        t.setName("service-renewal-pool-" + t.getId());
+                        t.setName("service-servicerenewal-pool-" + t.getId());
                         t.setDaemon(false);
                         return t;
                     }

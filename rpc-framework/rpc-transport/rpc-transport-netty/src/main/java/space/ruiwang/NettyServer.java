@@ -9,14 +9,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.provider.RpcServer;
+import space.ruiwang.api.transport.RpcProvider;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-20
  */
 @Slf4j
-public class NettyServer implements RpcServer {
+public class NettyServer implements RpcProvider {
     @Override
     public void start(String hostName, int port) {
         EventLoopGroup bossGroup = new NioEventLoopGroup();

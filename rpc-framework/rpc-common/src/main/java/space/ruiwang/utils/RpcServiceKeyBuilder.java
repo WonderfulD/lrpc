@@ -2,7 +2,7 @@ package space.ruiwang.utils;
 
 import static space.ruiwang.constants.RedisConstants.SERVICE_REGISTER_KEY;
 
-import space.ruiwang.domain.ServiceRegisterDO;
+import space.ruiwang.domain.ServiceMetaData;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -13,7 +13,7 @@ public class RpcServiceKeyBuilder {
         return String.join("$", serviceName, serviceVersion);
     }
 
-    public static String buildServiceKey(ServiceRegisterDO service) {
+    public static String buildServiceKey(ServiceMetaData service) {
         String serviceName = service.getServiceName();
         String serviceVersion = service.getServiceVersion();
         return buildServiceKey(serviceName, serviceVersion);
