@@ -11,9 +11,12 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.annotation.RpcService;
@@ -31,9 +34,11 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  */
 @Slf4j
 @Configuration
-public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
-    private static final String HOST_NAME = "localhost";
-    private static final int PORT = 9002;
+public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostProcessor, InitializingBean {
+    public static final String DEFAULT_ADDRESS = "localhost";
+    public static final int DEFAULT_PORT = 9001;
+    private String address;
+    private int port;
     @Autowired
     private IRemoteServiceRegister remoteServiceRegister;
     @Resource
@@ -42,6 +47,15 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
     private ServiceMetaData serviceMetaData;
 
     private boolean serverStarted = false;
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        // 从环境中读取配置属性, 设置默认值
+        address = environment.getProperty("lrpc.provider.address", DEFAULT_ADDRESS);
+        port = environment.getProperty("lrpc.provider.port", Integer.class, DEFAULT_PORT);
+
+        log.info("RPC provider configured with address: {}, port: {}", address, port);
+    }
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -60,14 +74,6 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
                     throw new IllegalStateException("Service interface not specified and class does not implement any interfaces");
                 }
             }
-            long ttl = rpcServiceAnnotation.ttl();
-
-            // 构造服务注册对象
-            serviceMetaData =
-                    new ServiceMetaData(serviceName.getName(), serviceVersion, HOST_NAME, PORT, ttl);
-
-            // 注册服务到远程
-            remoteServiceRegister.register(serviceMetaData);
 
             // 扫描指定包下所有标注了 @RpcService 的服务实现类，并注册到 serviceMap 中
             try {
@@ -76,17 +82,30 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
                 log.warn("Failed to register service implementation", e);
             }
 
-            // 只启动一次服务器
-            if (!serverStarted) {
-                serverStarted = true;
-                startRpcProvider();
-            }
+            long ttl = rpcServiceAnnotation.ttl();
+
+            // 构造服务注册对象
+            serviceMetaData =
+                    new ServiceMetaData(serviceName.getName(), serviceVersion, address, port, ttl);
+            // 注册服务到远程
+            remoteServiceRegister.register(serviceMetaData);
 
             // 线程池提交服务续约任务
             serviceRenewal(ttl, TimeUnit.MILLISECONDS);
         }
         return bean;
     }
+
+    @Override
+    public void afterPropertiesSet() {
+        // 只启动一次服务器
+        if (!serverStarted) {
+            serverStarted = true;
+            startRpcProvider();
+        }
+    }
+
+
 
     @PreDestroy
     private void shutdown() {
@@ -108,7 +127,7 @@ public class RpcServiceBeanPostProcessor implements BeanPostProcessor {
         RPC_PROVIDER_START_POOL.submit(() -> {
             try {
                 // 启动RPC服务器
-                server.start(HOST_NAME, PORT);
+                server.start(address, port);
             } catch (Exception e) {
                 log.error("Failed to start RPC Provider", e);
                 throw new RuntimeException(e);
