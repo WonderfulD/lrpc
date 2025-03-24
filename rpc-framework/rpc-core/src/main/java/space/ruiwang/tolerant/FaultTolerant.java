@@ -3,7 +3,7 @@ package space.ruiwang.tolerant;
 import java.util.List;
 
 import space.ruiwang.domain.RpcRequestConfig;
-import space.ruiwang.domain.RpcRequestDO;
+import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.ServiceMetaData;
 
 /**
@@ -11,6 +11,6 @@ import space.ruiwang.domain.ServiceMetaData;
  * Created on 2025-03-10
  */
 public interface FaultTolerant {
-    void handler(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig,
+    void handler(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices, ServiceMetaData service);
 }

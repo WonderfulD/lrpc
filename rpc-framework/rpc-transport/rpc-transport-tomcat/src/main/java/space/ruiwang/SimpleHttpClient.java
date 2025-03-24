@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.api.transport.RpcConsumer;
 import space.ruiwang.domain.RpcRequestConfig;
-import space.ruiwang.domain.RpcRequestDO;
-import space.ruiwang.domain.RpcResponseDO;
+import space.ruiwang.domain.RpcRequestDTO;
+import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.utils.InputStreamUtils;
-import space.ruiwang.utils.KryoSerializer;
+import space.ruiwang.utils.serializer.ProtobufSerializer;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -24,7 +24,7 @@ import space.ruiwang.utils.KryoSerializer;
 @Slf4j
 public class SimpleHttpClient implements RpcConsumer {
     @Override
-    public RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig) {
+    public RpcResponseDTO send(ServiceInstance serviceInstance, RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig) {
         String hostName = serviceInstance.getHostname();
         int port = serviceInstance.getPort();
 
@@ -38,8 +38,8 @@ public class SimpleHttpClient implements RpcConsumer {
             // 获取输出流
             OutputStream outputStream = httpURLConnection.getOutputStream();
 
-            // 序列化rpcRequestDO
-            byte[] rpcRequest = KryoSerializer.serialize(rpcRequestDO);
+            // 序列化rpcRequestDTO
+            byte[] rpcRequest = ProtobufSerializer.serializeRequest(rpcRequestDTO);
 
             // 发送请求
             outputStream.write(rpcRequest);
@@ -51,7 +51,7 @@ public class SimpleHttpClient implements RpcConsumer {
             byte[] responseBytes = InputStreamUtils.readAllBytes(inputStream);
 
             // 获得结果，反序列化后并返回
-            return KryoSerializer.deserialize(responseBytes, RpcResponseDO.class);
+            return ProtobufSerializer.deserializeResponse(responseBytes);
         } catch (Exception e) {
             log.error("发送rpc请求时失败");
         }
