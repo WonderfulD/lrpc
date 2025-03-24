@@ -23,3 +23,9 @@ redis:
   timeout: 5000
   retryAttempts: 3
   retryInterval: 1500
+
+# lrpc配置
+lrpc:
+  provider:
+    address:
+    port:
