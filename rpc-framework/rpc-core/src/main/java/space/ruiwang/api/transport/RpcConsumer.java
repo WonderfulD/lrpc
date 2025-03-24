@@ -1,8 +1,8 @@
 package space.ruiwang.api.transport;
 
 import space.ruiwang.domain.RpcRequestConfig;
-import space.ruiwang.domain.RpcRequestDO;
-import space.ruiwang.domain.RpcResponseDO;
+import space.ruiwang.domain.RpcRequestDTO;
+import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.domain.ServiceInstance;
 
 /**
@@ -10,5 +10,5 @@ import space.ruiwang.domain.ServiceInstance;
  * Created on 2025-02-12
  */
 public interface RpcConsumer {
-    RpcResponseDO send(ServiceInstance serviceInstance, RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig);
+    RpcResponseDTO send(ServiceInstance serviceInstance, RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig);
 }

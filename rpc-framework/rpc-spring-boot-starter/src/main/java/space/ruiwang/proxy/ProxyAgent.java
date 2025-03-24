@@ -1,5 +1,7 @@
 package space.ruiwang.proxy;
 
+import static space.ruiwang.domain.RpcRequestDTO.buildRpcRequestDTO;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -22,8 +24,8 @@ import space.ruiwang.api.transport.RpcConsumer;
 import space.ruiwang.constants.RpcResponseCode;
 import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
-import space.ruiwang.domain.RpcRequestDO;
-import space.ruiwang.domain.RpcResponseDO;
+import space.ruiwang.domain.RpcRequestDTO;
+import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.tolerant.FaultTolerant;
@@ -51,13 +53,12 @@ public class ProxyAgent {
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) {
-                        RpcRequestDO rpcRequestDO = new RpcRequestDO(
-                                interfaceClass.getName(),
-                                serviceVersion,
-                                method.getName(),
-                                method.getParameterTypes(),
-                                args);
-                        Object result = handle(rpcRequestDO, rpcRequestConfig, new ArrayList<>());
+                        RpcRequestDTO rpcRequestDTO = buildRpcRequestDTO(interfaceClass.getName(),
+                                                                         serviceVersion,
+                                                                         method.getName(),
+                                                                         method.getParameterTypes(),
+                                                                         args);
+                        Object result = handle(rpcRequestDTO, rpcRequestConfig, new ArrayList<>());
                         Class<?> returnType = method.getReturnType();
                         if (returnType.equals(Void.TYPE)) {
                             return null;
@@ -69,23 +70,23 @@ public class ProxyAgent {
         return interfaceClass.cast(proxyInstance);
     }
 
-    private Object handle(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig, List<ServiceMetaData> excludedServices) {
+    private Object handle(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig, List<ServiceMetaData> excludedServices) {
         while (rpcRequestConfig.getRetryCount() > 0) {
             // 查找服务实例
             ServiceMetaData service;
             try {
-                service = selectService(rpcRequestDO, rpcRequestConfig, excludedServices);
+                service = selectService(rpcRequestDTO, rpcRequestConfig, excludedServices);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             try {
                 // 发送Rpc请求
                 ServiceInstance serviceInstance = new ServiceInstance(service);
-                RpcResponseDO rpcResponseDO = rpcConsumer.send(serviceInstance, rpcRequestDO, rpcRequestConfig);
-                return checkRpcResponse(rpcResponseDO, rpcRequestDO);
+                RpcResponseDTO rpcResponseDTO = rpcConsumer.send(serviceInstance, rpcRequestDTO, rpcRequestConfig);
+                return checkRpcResponse(rpcResponseDTO, rpcRequestDTO);
             } catch (Exception e) {
                 // rpc请求发生错误，重试
-                faultTolerant(rpcRequestDO, rpcRequestConfig, excludedServices, service);
+                faultTolerant(rpcRequestDTO, rpcRequestConfig, excludedServices, service);
             }
         }
         throw new RuntimeException("rpc调用失败");
@@ -94,13 +95,13 @@ public class ProxyAgent {
     /**
      * 检查RpcResponse结果
      */
-    private Object checkRpcResponse(RpcResponseDO rpcResponseDO, RpcRequestDO rpcRequestDO) {
-        if (rpcResponseDO.getCode() != RpcResponseCode.SUCCESS) {
-            log.error("rpc调用遇到错误，请求参数: [{}]", rpcRequestDO);
+    private Object checkRpcResponse(RpcResponseDTO rpcResponseDTO, RpcRequestDTO rpcRequestDTO) {
+        if (rpcResponseDTO.getCode() != RpcResponseCode.SUCCESS) {
+            log.error("rpc调用遇到错误，请求参数: [{}]", rpcRequestDTO);
             throw new RuntimeException("rpc调用失败");
         } else {
-            log.info("rpc调用成功，请求参数: [{}]", rpcRequestDO);
-            return rpcResponseDO.getResult();
+            log.info("rpc调用成功，请求参数: [{}]", rpcRequestDTO);
+            return rpcResponseDTO.getResult();
         }
     }
 
@@ -108,13 +109,13 @@ public class ProxyAgent {
      * 请求失败后重试机制
      */
     @SneakyThrows
-    private void faultTolerant(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig,
+    private void faultTolerant(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices, ServiceMetaData service) {
         String tolerantType = rpcRequestConfig.getTolerant();
         Class<?> clazz = Class.forName(tolerantType);
         Constructor<?> constructor = clazz.getDeclaredConstructor();
         FaultTolerant tolerant = (FaultTolerant) constructor.newInstance();
-        tolerant.handler(rpcRequestDO, rpcRequestConfig, excludedServices, service);
+        tolerant.handler(rpcRequestDTO, rpcRequestConfig, excludedServices, service);
     }
 
     /**
@@ -122,25 +123,25 @@ public class ProxyAgent {
      * 查找出错/为空后，拉取远程注册中心所有服务实例，选择endTime最大的
      */
     @SneakyThrows
-    private ServiceMetaData selectService(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig,
+    private ServiceMetaData selectService(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices) {
         ServiceMetaData service;
         try {
             // 查找服务实例
             if (CollUtil.isEmpty(excludedServices)) {
                 // 排除的服务实例列表为空
-                service = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));
+                service = serviceSelector.selectService(new RpcRequest(rpcRequestDTO, rpcRequestConfig));
             } else {
-                service = serviceSelector.selectOtherService(new RpcRequest(rpcRequestDO, rpcRequestConfig), excludedServices);
+                service = serviceSelector.selectOtherService(new RpcRequest(rpcRequestDTO, rpcRequestConfig), excludedServices);
             }
         } catch (Exception e) {
             log.warn("查找服务实例失败，错误原因：{}", e.getMessage());
-            return retry(rpcRequestDO, rpcRequestConfig, excludedServices);
+            return retry(rpcRequestDTO, rpcRequestConfig, excludedServices);
         }
         if (BeanUtil.isEmpty(service)) {
             // 查找结果为空
             log.warn("无可用服务实例");
-            return retry(rpcRequestDO, rpcRequestConfig, excludedServices);
+            return retry(rpcRequestDTO, rpcRequestConfig, excludedServices);
         }
         return service;
     }
@@ -149,21 +150,21 @@ public class ProxyAgent {
      * 查找出错/为空后，拉取远程注册中心所有服务实例，选择endTime最大的
      */
     @SneakyThrows
-    private ServiceMetaData retry(RpcRequestDO rpcRequestDO, RpcRequestConfig rpcRequestConfig,
+    private ServiceMetaData retry(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices) {
         // 查找结果为空，进行重试
         // 1.1 拉取远程所有对应实例
         log.info("开始重新尝试查找服务实例");
-        String serviceName = rpcRequestDO.getServiceName();
-        String serviceVersion = rpcRequestDO.getServiceVersion();
+        String serviceName = rpcRequestDTO.getServiceName();
+        String serviceVersion = rpcRequestDTO.getServiceVersion();
         boolean loaded = localServiceRegister.loadService(serviceName, serviceVersion);
         ServiceMetaData service = null;
         if (loaded) {
             if (CollUtil.isEmpty(excludedServices)) {
                 // 排除的服务实例列表为空
-                service = serviceSelector.selectService(new RpcRequest(rpcRequestDO, rpcRequestConfig));
+                service = serviceSelector.selectService(new RpcRequest(rpcRequestDTO, rpcRequestConfig));
             } else {
-                service = serviceSelector.selectOtherService(new RpcRequest(rpcRequestDO, rpcRequestConfig), excludedServices);
+                service = serviceSelector.selectOtherService(new RpcRequest(rpcRequestDTO, rpcRequestConfig), excludedServices);
             }
         }
         if (BeanUtil.isNotEmpty(service)) {

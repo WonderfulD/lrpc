@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RpcRequest implements Serializable {
-    private RpcRequestDO requestDO;
+    private RpcRequestDTO requestDTO;
     private RpcRequestConfig requestConfig;
 }

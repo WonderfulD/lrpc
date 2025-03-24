@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "space.ruiwang.protobuf";
+option java_outer_classname = "RpcMessageProto";
+
+// RPC请求消息
+message RpcRequestProto {
+  string uuid = 1;
+  string service_name = 2;
+  string service_version = 3;
+  string method_name = 4;
+  repeated ParamTypeProto parameter_types = 5;
+  repeated bytes parameters = 6;
+}
+
+// 参数类型(因为protobuf不支持直接序列化Class对象)
+message ParamTypeProto {
+  string class_name = 1;
+}
+
+// RPC响应消息
+message RpcResponseProto {
+  string uuid = 1;
+  string request_uuid = 2;
+  string msg = 3;
+  bytes result = 4;
+  int32 code = 5;
+}

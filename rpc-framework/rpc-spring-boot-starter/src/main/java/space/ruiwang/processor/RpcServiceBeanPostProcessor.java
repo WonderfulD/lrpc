@@ -11,7 +11,6 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.EnvironmentAware;
@@ -34,9 +33,9 @@ import space.ruiwang.utils.RpcServiceKeyBuilder;
  */
 @Slf4j
 @Configuration
-public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostProcessor, InitializingBean {
+public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostProcessor {
     public static final String DEFAULT_ADDRESS = "localhost";
-    public static final int DEFAULT_PORT = 9001;
+    public static final int DEFAULT_PORT = 8999;
     private String address;
     private int port;
     @Autowired
@@ -82,6 +81,12 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
                 log.warn("Failed to register service implementation", e);
             }
 
+            // 只启动一次服务器
+            if (!serverStarted) {
+                serverStarted = true;
+                startRpcProvider();
+            }
+
             long ttl = rpcServiceAnnotation.ttl();
 
             // 构造服务注册对象
@@ -95,17 +100,6 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
         }
         return bean;
     }
-
-    @Override
-    public void afterPropertiesSet() {
-        // 只启动一次服务器
-        if (!serverStarted) {
-            serverStarted = true;
-            startRpcProvider();
-        }
-    }
-
-
 
     @PreDestroy
     private void shutdown() {
