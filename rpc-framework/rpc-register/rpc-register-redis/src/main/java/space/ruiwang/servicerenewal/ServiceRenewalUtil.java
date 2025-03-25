@@ -44,7 +44,7 @@ public class ServiceRenewalUtil {
                 log.info("服务重新注册成功，服务:[{}]", serviceKey);
                 return true;
             } else {
-                log.info("服务重新注册失败，服务:[{}]", serviceKey);
+                log.warn("服务重新注册失败，服务:[{}]", serviceKey);
                 return false;
             }
         } catch (Exception e) {

@@ -55,23 +55,23 @@ public class RpcClientNetty implements RpcConsumer {
     @Override
     public RpcResponseDTO send(ServiceInstance serviceInstance, RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig) {
         String instanceKey = serviceInstance.getHostname() + ":" + serviceInstance.getPort();
-
+        String requestId = rpcRequestDTO.getUuid();
         try {
             // 获取或创建到服务实例的Channel
             Channel channel = getOrCreateChannel(serviceInstance);
             if (channel == null || !channel.isActive()) {
-                return RpcResponseDTO.error("无法建立到服务器的连接: " + instanceKey);
+                return RpcResponseDTO.error(requestId, "无法建立到服务器的连接: " + instanceKey);
             }
 
             // 创建响应的Future
             CompletableFuture<RpcResponseDTO> responseFuture = new CompletableFuture<>();
-            RESPONSE_MAP.put(rpcRequestDTO.getUuid(), responseFuture);
+            RESPONSE_MAP.put(requestId, responseFuture);
 
             // 发送请求
             channel.writeAndFlush(rpcRequestDTO).addListener(future -> {
                 if (!future.isSuccess()) {
                     responseFuture.completeExceptionally(future.cause());
-                    RESPONSE_MAP.remove(rpcRequestDTO.getUuid());
+                    RESPONSE_MAP.remove(requestId);
                     log.error("发送请求失败: {}", future.cause().getMessage());
                 }
             });
@@ -80,16 +80,16 @@ public class RpcClientNetty implements RpcConsumer {
             try {
                 return responseFuture.get(rpcRequestConfig.getTimeout(), TimeUnit.SECONDS);
             } catch (TimeoutException e) {
-                RESPONSE_MAP.remove(rpcRequestDTO.getUuid());
-                return RpcResponseDTO.error("请求超时");
+                RESPONSE_MAP.remove(requestId);
+                return RpcResponseDTO.error(requestId, "请求超时");
             } catch (Exception e) {
-                RESPONSE_MAP.remove(rpcRequestDTO.getUuid());
+                RESPONSE_MAP.remove(requestId);
                 log.error("获取RPC响应异常", e);
-                return RpcResponseDTO.error("RPC调用异常: " + e.getMessage());
+                return RpcResponseDTO.error(requestId, "RPC调用异常: " + e.getMessage());
             }
         } catch (Exception e) {
             log.error("RPC调用过程发生异常", e);
-            return RpcResponseDTO.error("RPC调用异常: " + e.getMessage());
+            return RpcResponseDTO.error(requestId, "RPC调用异常: " + e.getMessage());
         }
     }
 
@@ -126,7 +126,7 @@ public class RpcClientNetty implements RpcConsumer {
         RESPONSE_MAP.clear();
 
         // 优雅关闭事件循环组
-        if (eventLoopGroup != null && !eventLoopGroup.isShutdown()) {
+        if (!eventLoopGroup.isShutdown()) {
             try {
                 eventLoopGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
                 log.info("RPC客户端事件循环组已关闭");
