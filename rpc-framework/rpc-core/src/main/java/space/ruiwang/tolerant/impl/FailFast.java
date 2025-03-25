@@ -5,6 +5,7 @@ import java.util.List;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.ServiceMetaData;
+import space.ruiwang.exception.FaultTolerantException;
 import space.ruiwang.tolerant.FaultTolerant;
 
 /**
@@ -15,6 +16,6 @@ public class FailFast implements FaultTolerant {
     @Override
     public void handler(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices, ServiceMetaData service) {
-        throw new RuntimeException("触发FailFast策略，Rpc请求失败");
+        throw new FaultTolerantException("触发FailFast策略，Rpc请求失败");
     }
 }

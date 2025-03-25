@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import space.ruiwang.annotation.RpcReference;
+import space.ruiwang.constants.FaultTolerantStrategies;
 import space.ruiwang.service.TestService;
 import space.ruiwang.utils.AjaxResult;
 
@@ -13,7 +14,7 @@ import space.ruiwang.utils.AjaxResult;
 @RequestMapping("/test")
 public class TestController {
 
-    @RpcReference
+    @RpcReference(tolerant = FaultTolerantStrategies.FAIL_OVER)
     private TestService testService;
 
     @GetMapping("/calc")
