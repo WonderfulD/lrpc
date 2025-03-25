@@ -28,6 +28,7 @@ import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.domain.ServiceMetaData;
+import space.ruiwang.exception.RetryLimitExceededException;
 import space.ruiwang.tolerant.FaultTolerant;
 
 
@@ -45,11 +46,8 @@ public class ProxyAgent {
     @Autowired
     private ILocalServiceRegister localServiceRegister;
 
-    public <T> T getProxy(Class<T> interfaceClass,
-            String serviceVersion, RpcRequestConfig rpcRequestConfig) {
-        Object proxyInstance = Proxy.newProxyInstance(
-                ProxyAgent.class.getClassLoader(),
-                new Class<?>[]{interfaceClass},
+    public <T> T getProxy(Class<T> interfaceClass, String serviceVersion, RpcRequestConfig rpcRequestConfig) {
+        Object proxyInstance = Proxy.newProxyInstance(ProxyAgent.class.getClassLoader(), new Class<?>[]{interfaceClass},
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) {
@@ -58,7 +56,9 @@ public class ProxyAgent {
                                                                          method.getName(),
                                                                          method.getParameterTypes(),
                                                                          args);
+                        long retryCount = rpcRequestConfig.getRetryCount();
                         Object result = handle(rpcRequestDTO, rpcRequestConfig, new ArrayList<>());
+                        rpcRequestConfig.setRetryCount(retryCount);
                         Class<?> returnType = method.getReturnType();
                         if (returnType.equals(Void.TYPE)) {
                             return null;
@@ -73,12 +73,7 @@ public class ProxyAgent {
     private Object handle(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig, List<ServiceMetaData> excludedServices) {
         while (rpcRequestConfig.getRetryCount() > 0) {
             // 查找服务实例
-            ServiceMetaData service;
-            try {
-                service = selectService(rpcRequestDTO, rpcRequestConfig, excludedServices);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            ServiceMetaData service = selectService(rpcRequestDTO, rpcRequestConfig, excludedServices);
             try {
                 // 发送Rpc请求
                 ServiceInstance serviceInstance = new ServiceInstance(service);
@@ -89,7 +84,7 @@ public class ProxyAgent {
                 faultTolerant(rpcRequestDTO, rpcRequestConfig, excludedServices, service);
             }
         }
-        throw new RuntimeException("rpc调用失败");
+        throw new RetryLimitExceededException("rpc调用失败，超过最大可重试次数");
     }
 
     /**
@@ -153,7 +148,7 @@ public class ProxyAgent {
     private ServiceMetaData retry(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig,
             List<ServiceMetaData> excludedServices) {
         // 查找结果为空，进行重试
-        // 1.1 拉取远程所有对应实例
+        // 拉取远程所有对应实例
         log.info("开始重新尝试查找服务实例");
         String serviceName = rpcRequestDTO.getServiceName();
         String serviceVersion = rpcRequestDTO.getServiceVersion();

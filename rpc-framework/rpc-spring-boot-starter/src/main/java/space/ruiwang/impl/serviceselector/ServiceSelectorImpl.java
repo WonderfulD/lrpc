@@ -36,7 +36,8 @@ public class ServiceSelectorImpl implements IServiceSelector {
             // 获取具体服务
             return serviceDiscovery.selectService(serviceName, serviceVersion, loadBalancerType);
         } catch (Exception e) {
-            throw new RuntimeException("Rpc调用失败，无法找到实例");
+            log.warn("查找可用实例时遇到错误");
+            throw e;
         }
     }
 
@@ -52,7 +53,8 @@ public class ServiceSelectorImpl implements IServiceSelector {
             // 从去掉一些服务实例的列表中获取具体服务
             return serviceDiscovery.selectOtherService(serviceName, serviceVersion, loadBalancerType, excludedServices);
         } catch (Exception e) {
-            throw new RuntimeException("Rpc调用失败，无法找到实例");
+            log.warn("查找其余可用实例时遇到错误");
+            throw e;
         }
     }
 }
