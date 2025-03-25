@@ -34,8 +34,7 @@ public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
                 long retryCount = rpcReference.retryCount();
                 long timeout = rpcReference.timeout();
                 String tolerant = rpcReference.tolerant();
-                RpcRequestConfig rpcRequestConfig =
-                        new RpcRequestConfig(loadBalancerType, retryCount, timeout, tolerant);
+                RpcRequestConfig rpcRequestConfig = new RpcRequestConfig(loadBalancerType, retryCount, timeout, tolerant);
 
                 // 获取代理对象并注入
                 Object proxy = proxyFactory.getProxy(field.getType(), serviceVersion, rpcRequestConfig);
