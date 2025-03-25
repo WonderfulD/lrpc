@@ -8,11 +8,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.domain.RpcRequestDO;
-import space.ruiwang.domain.RpcResponseDO;
+import space.ruiwang.domain.RpcRequestDTO;
+import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.servicemanager.ServiceRegisterUtil;
 import space.ruiwang.utils.InputStreamUtils;
-import space.ruiwang.utils.KryoSerializer;
+import space.ruiwang.utils.serializer.ProtobufSerializer;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -27,13 +27,13 @@ public class HttpServletHandler {
             byte[] rpcRequest = InputStreamUtils.readAllBytes(inputStream);
 
             // 反序列化请求
-            RpcRequestDO rpcRequestDO = KryoSerializer.deserialize(rpcRequest, RpcRequestDO.class);
+            RpcRequestDTO rpcRequestDTO = ProtobufSerializer.deserializeRequest(rpcRequest);
 
             // 从rpc请求数据载体获取：服务名、方法名、参数类型列表、参数列表
-            String serviceName = rpcRequestDO.getServiceName();
-            String methodName = rpcRequestDO.getMethodName();
-            Class<?>[] parameterTypes = rpcRequestDO.getParameterTypes();
-            Object[] parameters = rpcRequestDO.getParameters();
+            String serviceName = rpcRequestDTO.getServiceName();
+            String methodName = rpcRequestDTO.getMethodName();
+            Class<?>[] parameterTypes = rpcRequestDTO.getParameterTypes();
+            Object[] parameters = rpcRequestDTO.getParameters();
 
             // 反射获取方法执行结果
             // 根据注解@RpcService来查找实现了serviceName接口的实现类对象
@@ -41,11 +41,11 @@ public class HttpServletHandler {
             Method method = serviceClass.getClass().getMethod(methodName, parameterTypes);
             Object result = method.invoke(serviceClass, parameters);
 
-            // 封装为RpcResponseDO
-            RpcResponseDO rpcResponseDO = RpcResponseDO.success(result);
+            // 封装为RpcResponseDTO
+            RpcResponseDTO rpcResponseDTO = RpcResponseDTO.success(rpcRequestDTO.getUuid(), result);
 
             // 序列化结果
-            byte[] rpcResponse = KryoSerializer.serialize(rpcResponseDO);
+            byte[] rpcResponse = ProtobufSerializer.serializeResponse(rpcResponseDTO);
 
             OutputStream outputStream = resp.getOutputStream();
             // 写入结果

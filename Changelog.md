@@ -26,6 +26,38 @@
 
 ---
 
+## [0.10.1] - 2025-03-25
+
+### 新增
+- 无
+
+### 变更
+- 部分日志log级别变更
+
+### 修复
+- 修复了RpcResponseDTO.error的入参与预期不符的问题
+
+### 其他
+- 无
+
+---
+
+## [0.10.0] - 2025-03-24
+
+### 新增
+- 优化了transport-netty的通信效率
+
+### 变更
+- RpcResponseDTO和RpcRequestDTO现在使用Protobuf序列化
+
+### 修复
+- 无
+
+### 其他
+- 无
+
+---
+
 ## [0.9.1] - 2025-03-24
 
 ### 新增
@@ -209,8 +241,8 @@
 - 可以通过@RpcReference注解使用指定方式调用对应的方法
 
 ### 变更
-- 修改了RpcResponseDO的内容，可以包含更多信息
-- 根据RpcResponseDO的状态码来解析rpc响应
+- 修改了RpcResponseDTO的内容，可以包含更多信息
+- 根据RpcResponseDTO的状态码来解析rpc响应
 
 ### 修复
 - 无

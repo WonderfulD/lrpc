@@ -16,10 +16,10 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
-import space.ruiwang.utils.ServiceUtil;
 import space.ruiwang.api.serviceregister.sub.IRemoteServiceRegister;
 import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
+import space.ruiwang.utils.ServiceUtil;
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -54,7 +54,7 @@ public class RemoteServiceRegisterNacosImpl implements IRemoteServiceRegister {
             // 注册实例
             namingService.registerInstance(serviceKey, instance);
 
-            log.info("Successfully registered [{}] service.", instance.getServiceName());
+            log.info("Nacos注册服务成功 [{}].", instance.getServiceName());
             return true;
         } catch (Exception e) {
             throw new RuntimeException(String.format("An error occurred when rpc server registering [%s] service.",
@@ -75,7 +75,7 @@ public class RemoteServiceRegisterNacosImpl implements IRemoteServiceRegister {
             instance.setMetadata(ServiceUtil.toMap(service));
 
             namingService.deregisterInstance(instance.getServiceName(), instance);
-            log.warn("Successfully unregistered {} service.", instance.getServiceName());
+            log.info("Nacos下线服务成功 [{}].", instance.getServiceName());
             return true;
         } catch (NacosException e) {
             throw new RuntimeException(e);
