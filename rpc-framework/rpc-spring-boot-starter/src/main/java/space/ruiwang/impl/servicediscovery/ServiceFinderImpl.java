@@ -13,6 +13,7 @@ import space.ruiwang.api.servicediscovery.IServiceDiscovery;
 import space.ruiwang.api.serviceregister.sub.ILocalServiceRegister;
 import space.ruiwang.api.serviceregister.sub.IRemoteServiceRegister;
 import space.ruiwang.domain.ServiceMetaData;
+import space.ruiwang.exception.NoAvailInstanceException;
 import space.ruiwang.loadbalance.LoadBalancer;
 import space.ruiwang.loadbalance.impl.RandomLoadBalancer;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
@@ -88,7 +89,7 @@ public class ServiceFinderImpl implements IServiceDiscovery {
 
         // 3. 本地和远程都没有找到
         log.error("本地和远程注册中心皆未找到可用服务实例 [{}]", serviceKey);
-        return null;
+        throw new NoAvailInstanceException("无可用实例");
     }
 
     /**
