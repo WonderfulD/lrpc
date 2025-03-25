@@ -29,7 +29,7 @@ public class ConsistentHashingLoadBalancer implements LoadBalancer {
     public ConsistentHashingLoadBalancer(String serviceName, String serviceVersion) {
         this.serviceName = serviceName;
         this.serviceVersion = serviceVersion;
-        log.info("服务[{}${}]的一致性哈希负载均衡器已构建", serviceName, serviceVersion);
+        log.debug("服务[{}${}]的一致性哈希负载均衡器已构建", serviceName, serviceVersion);
     }
 
     // 注册服务节点到哈希环
@@ -40,7 +40,7 @@ public class ConsistentHashingLoadBalancer implements LoadBalancer {
             long hashKey = hash(serviceKey + "#VN" + i);
             ring.put(hashKey, serviceMetaData);
         }
-        log.info("服务节点已添加到哈希环。节点: [{}], 哈希环: [{}${}]", serviceMetaData, serviceName, serviceVersion);
+        log.debug("服务节点已添加到哈希环。节点: [{}], 哈希环: [{}${}]", serviceMetaData, serviceName, serviceVersion);
     }
 
     //从哈希环移除服务节点
@@ -51,7 +51,7 @@ public class ConsistentHashingLoadBalancer implements LoadBalancer {
             long hashKey = hash(serviceKey + "#VN" + i);
             ring.remove(hashKey);
         }
-        log.info("服务节点已从哈希环删除。节点: [{}], 哈希环: [{}${}]", serviceMetaData, serviceName, serviceVersion);
+        log.debug("服务节点已从哈希环删除。节点: [{}], 哈希环: [{}${}]", serviceMetaData, serviceName, serviceVersion);
     }
 
     // 查找服务节点

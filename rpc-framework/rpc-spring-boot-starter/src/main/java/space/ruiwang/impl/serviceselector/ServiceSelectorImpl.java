@@ -11,7 +11,7 @@ import space.ruiwang.api.servicediscovery.IServiceDiscovery;
 import space.ruiwang.api.serviceselector.IServiceSelector;
 import space.ruiwang.domain.RpcRequest;
 import space.ruiwang.domain.RpcRequestConfig;
-import space.ruiwang.domain.RpcRequestDO;
+import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.ServiceMetaData;
 
 
@@ -26,10 +26,10 @@ public class ServiceSelectorImpl implements IServiceSelector {
     private IServiceDiscovery serviceDiscovery;
     @Override
     public ServiceMetaData selectService(RpcRequest rpcRequest) {
-        RpcRequestDO requestDO = rpcRequest.getRequestDO();
+        RpcRequestDTO requestDTO = rpcRequest.getRequestDTO();
         RpcRequestConfig requestConfig = rpcRequest.getRequestConfig();
-        String serviceName = requestDO.getServiceName();
-        String serviceVersion = requestDO.getServiceVersion();
+        String serviceName = requestDTO.getServiceName();
+        String serviceVersion = requestDTO.getServiceVersion();
         String loadBalancerType = requestConfig.getLoadBalancerType();
 
         try {
@@ -42,10 +42,10 @@ public class ServiceSelectorImpl implements IServiceSelector {
 
     @Override
     public ServiceMetaData selectOtherService(RpcRequest rpcRequest, List<ServiceMetaData> excludedServices) {
-        RpcRequestDO requestDO = rpcRequest.getRequestDO();
+        RpcRequestDTO requestDTO = rpcRequest.getRequestDTO();
         RpcRequestConfig requestConfig = rpcRequest.getRequestConfig();
-        String serviceName = requestDO.getServiceName();
-        String serviceVersion = requestDO.getServiceVersion();
+        String serviceName = requestDTO.getServiceName();
+        String serviceVersion = requestDTO.getServiceVersion();
         String loadBalancerType = requestConfig.getLoadBalancerType();
 
         try {
