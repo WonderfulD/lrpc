@@ -104,7 +104,7 @@ public class ServiceFinderImpl implements IServiceDiscovery {
             Constructor<?> constructor = clazz.getDeclaredConstructor(String.class, String.class);
             loadBalancer = (LoadBalancer) constructor.newInstance(serviceName, serviceVersion);
         } catch (Exception e) {
-            log.error("未找到负载均衡器，退化到RandomLoadBalancer, loadBalancerType={}", loadBalancerType);
+            log.warn("未找到负载均衡器，退化到RandomLoadBalancer, loadBalancerType={}", loadBalancerType);
             loadBalancer = new RandomLoadBalancer(serviceName, serviceVersion);
         }
         return loadBalancer.selectService(availableServices);
