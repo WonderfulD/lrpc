@@ -110,7 +110,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequestDTO>
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.info("客户端连接已断开: {}", ctx.channel().remoteAddress());
+        log.warn("客户端连接已断开: {}", ctx.channel().remoteAddress());
     }
 
     /**

@@ -18,7 +18,7 @@ public class RandomLoadBalancer implements LoadBalancer {
     public RandomLoadBalancer(String serviceName, String serviceVersion) {
         this.serviceName = serviceName;
         this.serviceVersion = serviceVersion;
-        log.info("服务[{}${}]的随机负载均衡器已构建", serviceName, serviceVersion);
+        log.debug("服务[{}${}]的随机负载均衡器已构建", serviceName, serviceVersion);
     }
 
     @Override
