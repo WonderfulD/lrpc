@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import cn.hutool.core.util.HashUtil;
+import cn.hutool.core.util.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.loadbalance.LoadBalancer;
@@ -88,7 +89,7 @@ public class ConsistentHashingLoadBalancer implements LoadBalancer {
 
     // 生成唯一key
     private String generateUniqueKey() {
-        return serviceName + "$" + serviceVersion + "#" + System.nanoTime() + "#" + Math.random();
+        return serviceName + "$" + serviceVersion + "#" + IdUtil.fastSimpleUUID();
     }
 
     private void updateRing(List<ServiceMetaData> availableServices) {

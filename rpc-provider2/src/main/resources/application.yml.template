@@ -1,6 +1,6 @@
 # 服务器配置
 server:
-  port: 10001
+  port: 10002
 
 # 日志配置
 logging:
@@ -23,6 +23,12 @@ redis:
   timeout: 5000
   retryAttempts: 3
   retryInterval: 1500
+
+# Nacos配置
+nacos:
+  server-addr: hostName:port
+  username: nacos
+  password: nacos
 
 # lrpc配置
 lrpc:

@@ -9,11 +9,110 @@ LRPC 是一款轻量级、高性能的 RPC 框架，深度集成 Spring Boot，�
 - 高可用性: 内置多种重试策略和负载均衡算法
 - Spring Boot 集成: 提供 starter 组件，一键集成到 Spring Boot 应用
 ## 使用说明
-启动Provider、Consumer需要添加JVM参数
+
+### Maven 依赖配置
+
+在您的 Spring Boot 项目中添加以下依赖：
+
+```xml
+<!-- 必须引入：LRPC Spring Boot Starter -->
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-spring-boot-starter</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+
+<!-- 选择注册中心实现 (二选一) -->
+<!-- Nacos 注册中心 -->
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-register-nacos</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+<!-- 或 Redis 注册中心 -->
+<!--
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-register-redis</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+-->
+
+<!-- 选择通信层实现 (二选一) -->
+<!-- Netty 通信 (推荐) -->
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-transport-netty</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+<!-- 或 Tomcat 通信 -->
+<!--
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-transport-tomcat</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+-->
+
+<!-- 共享服务接口 (Provider 和 Consumer 共用) -->
+<dependency>
+    <groupId>space.ruiwang</groupId>
+    <artifactId>rpc-interface</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
+### JVM 参数
+
+启动 Provider、Consumer 需要添加以下 JVM 参数：
+
 ```bash
 --add-opens java.base/java.lang=ALL-UNNAMED
 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
 --add-opens java.base/java.nio=ALL-UNNAMED
 --add-opens java.base/sun.nio.ch=ALL-UNNAMED
 -Dio.netty.tryReflectionSetAccessible=true
+```
+
+### Provider 端示例
+
+```java
+@SpringBootApplication
+@EnableProviderRpc
+public class RpcProviderApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(RpcProviderApplication.class, args);
+    }
+}
+
+@RpcService(interfaceClass = TestService.class, serviceVersion = "1.0")
+public class TestServiceImpl implements TestService {
+    @Override
+    public int calc(int a, int b) {
+        return a + b;
+    }
+}
+```
+
+### Consumer 端示例
+
+```java
+@SpringBootApplication
+@EnableConsumerRpc
+public class RpcConsumerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(RpcConsumerApplication.class, args);
+    }
+}
+
+@RestController
+public class TestController {
+    @RpcReference(serviceVersion = "1.0")
+    private TestService testService;
+
+    @GetMapping("/test")
+    public int test() {
+        return testService.calc(1, 2);
+    }
+}
 ```
