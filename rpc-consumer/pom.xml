@@ -24,6 +24,14 @@
 <!--            <version>1.0-SNAPSHOT</version>-->
 <!--        </dependency>-->
 
+        <!-- LRPC Spring Boot Starter (必须显式引入) -->
+        <dependency>
+            <groupId>space.ruiwang</groupId>
+            <artifactId>rpc-spring-boot-starter</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <!-- 注册中心实现 -->
         <dependency>
             <groupId>space.ruiwang</groupId>
             <artifactId>rpc-register-nacos</artifactId>

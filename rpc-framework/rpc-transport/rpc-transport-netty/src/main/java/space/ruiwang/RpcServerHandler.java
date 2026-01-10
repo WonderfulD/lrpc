@@ -9,7 +9,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.RpcResponseDTO;
-import space.ruiwang.servicemanager.ServiceRegisterUtil;
+import space.ruiwang.servicemanager.ServiceMapHolder;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
@@ -58,7 +58,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequestDTO>
     private RpcResponseDTO processRequest(RpcRequestDTO request) {
         try {
             // 获取服务实例
-            Object serviceInstance = ServiceRegisterUtil.getService(request.getServiceName());
+            Object serviceInstance = ServiceMapHolder.getService(request.getServiceName());
             if (serviceInstance == null) {
                 log.error("服务不存在: {}", request.getServiceName());
                 return RpcResponseDTO.error(

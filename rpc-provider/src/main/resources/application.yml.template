@@ -24,6 +24,12 @@ redis:
   retryAttempts: 3
   retryInterval: 1500
 
+# Nacos配置
+nacos:
+  server-addr: hostName:port
+  username: nacos
+  password: nacos
+
 # lrpc配置
 lrpc:
   provider:

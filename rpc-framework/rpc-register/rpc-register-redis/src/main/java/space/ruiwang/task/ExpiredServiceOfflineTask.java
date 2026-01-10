@@ -36,8 +36,7 @@ public class ExpiredServiceOfflineTask {
     @Resource
     private RedissonOps redissonOps;
 
-    @Autowired
-    private ServiceStatus serviceStatus;
+    private final ServiceStatus serviceStatus = ServiceStatus.getInstance();
 
     @Autowired
     private ScheduledExecutorService scheduledExecutor;
@@ -56,7 +55,7 @@ public class ExpiredServiceOfflineTask {
                         log.error("执行清理任务时发生异常", e);
                     }
                 },
-                10,  // 初始延迟
+                10, // 初始延迟
                 10, // 间隔时间
                 TimeUnit.MINUTES // 时间单位
         );
@@ -70,7 +69,8 @@ public class ExpiredServiceOfflineTask {
         if (StrUtil.isEmpty(serviceKeysStr)) {
             serviceKeyList = new HashSet<>();
         } else {
-            serviceKeyList = JSONUtil.toBean(serviceKeysStr, new TypeReference<>() { }, false);
+            serviceKeyList = JSONUtil.toBean(serviceKeysStr, new TypeReference<>() {
+            }, false);
         }
         if (CollUtil.isEmpty(serviceKeyList)) {
             log.warn("没有要清理的服务");

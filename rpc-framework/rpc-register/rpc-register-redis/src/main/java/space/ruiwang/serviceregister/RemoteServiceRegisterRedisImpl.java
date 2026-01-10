@@ -26,9 +26,8 @@ import space.ruiwang.api.serviceregister.sub.IRemoteServiceRegister;
 import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.redisconfig.impl.RedissonOps;
 import space.ruiwang.service.ServiceStatus;
-import space.ruiwang.servicemanager.ServiceRegisterUtil;
+import space.ruiwang.servicemanager.ServiceMapHolder;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
-
 
 /**
  * @author wangrui <wangrui45@kuaishou.com>
@@ -41,8 +40,8 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
 
     @Resource
     private RedissonOps redissonOps;
-    @Resource
-    private ServiceStatus serviceStatus;
+
+    private final ServiceStatus serviceStatus = ServiceStatus.getInstance();
 
     /**
      * 向Redis注册新服务
@@ -60,10 +59,11 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
             } else {
                 // 当前key已有服务实例
                 // 反序列化
-                registeredServices = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
+                registeredServices = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() {
+                }, false);
             }
 
-            if (ServiceRegisterUtil.ifRegistered(registeredServices, service)) {
+            if (ServiceMapHolder.ifRegistered(registeredServices, service)) {
                 // 服务实例已被注册过
                 throw new RuntimeException("该服务实例已被注册");
             }
@@ -73,7 +73,8 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
                 service.setEndTime(new Date().getTime() + SERVICE_TTL_MIL);
             }
             registeredServices.add(service);
-            redissonOps.setWithExpiration(redisKey, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN, TimeUnit.MINUTES);
+            redissonOps.setWithExpiration(redisKey, JSONUtil.toJsonStr(registeredServices), SERVICE_CLUSTER_TTL_MIN,
+                    TimeUnit.MINUTES);
             add2RegisteredServiceList(service);
             log.info("远程注册中心：服务实例注册成功。服务名: [{}]， 注册信息: [{}]", key, service);
         } catch (Exception e) {
@@ -82,7 +83,6 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
         }
         return true;
     }
-
 
     /**
      * 服务下线
@@ -96,7 +96,8 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
             return false;
         }
         // 过滤出没有当前服务实例的服务实例列表
-        List<ServiceMetaData> otherServices = serviceList.stream().filter(e -> !e.getUuid().equals(service.getUuid())).collect(Collectors.toList());
+        List<ServiceMetaData> otherServices = serviceList.stream().filter(e -> !e.getUuid().equals(service.getUuid()))
+                .collect(Collectors.toList());
         // 更新redis
         String redisKey = RpcServiceKeyBuilder.buildServiceRegisterRedisKey(key);
         redissonOps.getSet(redisKey, JSONUtil.toJsonStr(otherServices));
@@ -158,7 +159,8 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
         if (StrUtil.isEmpty(registeredServicesStr)) {
             return null;
         }
-        List<ServiceMetaData> serviceList = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() { }, false);
+        List<ServiceMetaData> serviceList = JSONUtil.toBean(registeredServicesStr, new TypeReference<>() {
+        }, false);
         return filterUnExpiredServiceList(serviceList);
     }
 
@@ -168,7 +170,8 @@ public class RemoteServiceRegisterRedisImpl implements IRemoteServiceRegister {
         if (StrUtil.isEmpty(serviceKeysStr)) {
             serviceKeyList = new HashSet<>();
         } else {
-            serviceKeyList = JSONUtil.toBean(serviceKeysStr, new TypeReference<>() { }, false);
+            serviceKeyList = JSONUtil.toBean(serviceKeysStr, new TypeReference<>() {
+            }, false);
         }
         serviceKeyList.add(RpcServiceKeyBuilder.buildServiceKey(service));
         redissonOps.set(SERVICE_CLEANER_KEY, JSONUtil.toJsonStr(serviceKeyList));

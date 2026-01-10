@@ -19,13 +19,10 @@ import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.service.ServiceStatus;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
-
-
 /**
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-11
  */
-
 
 /**
  * 本地注册中心
@@ -44,18 +41,16 @@ public class LocalServiceRegisterRedisImpl implements ILocalServiceRegister {
      * Value: 该服务对应的多个ServiceRegisterDO对象列表（不同实例的服务）
      *
      * 说明:
-     *   - ConcurrentHashMap 保证Map本身的线程安全
-     *   - CopyOnWriteArrayList 在增删时会复制底层数组，读操作时无锁
-     *   - 在写操作不算非常频繁的场景下，可简化并发处理
+     * - ConcurrentHashMap 保证Map本身的线程安全
+     * - CopyOnWriteArrayList 在增删时会复制底层数组，读操作时无锁
+     * - 在写操作不算非常频繁的场景下，可简化并发处理
      */
     private static final Map<String, CopyOnWriteArrayList<ServiceMetaData>> LOCAL_REGISTRATION = new ConcurrentHashMap<>();
 
     @Resource
     private ServiceLoaderUtil serviceLoaderUtil;
 
-    @Resource
-    private ServiceStatus serviceStatusUtil;
-
+    private final ServiceStatus serviceStatusUtil = ServiceStatus.getInstance();
 
     /**
      * 注册服务到本地
@@ -80,7 +75,8 @@ public class LocalServiceRegisterRedisImpl implements ILocalServiceRegister {
      */
     public boolean deregister(ServiceMetaData serviceMetaData) {
         try {
-            String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceMetaData.getServiceName(), serviceMetaData.getServiceVersion());
+            String serviceKey = RpcServiceKeyBuilder.buildServiceKey(serviceMetaData.getServiceName(),
+                    serviceMetaData.getServiceVersion());
             CopyOnWriteArrayList<ServiceMetaData> serviceList = LOCAL_REGISTRATION.get(serviceKey);
             if (serviceList != null) {
                 // 移除指定ServiceRegisterDO
@@ -115,7 +111,8 @@ public class LocalServiceRegisterRedisImpl implements ILocalServiceRegister {
     @Override
     public boolean loadService(String serviceKey) {
         try {
-            CopyOnWriteArrayList<ServiceMetaData> serviceList = new CopyOnWriteArrayList<>(serviceLoaderUtil.loadService(serviceKey));
+            CopyOnWriteArrayList<ServiceMetaData> serviceList = new CopyOnWriteArrayList<>(
+                    serviceLoaderUtil.loadService(serviceKey));
             LOCAL_REGISTRATION.put(serviceKey, serviceList);
             log.info("从远程注册中心拉取服务实例列表[{}]成功", serviceKey);
             return true;
