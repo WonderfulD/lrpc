@@ -41,3 +41,6 @@ rpc-provider2/src/main/resources/application.yml
 
 # reference
 /reference
+
+# doc
+/doc

@@ -1,0 +1,17 @@
+package space.ruiwang.agent.discovery.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import lombok.Data;
+
+@Data
+@ConfigurationProperties(prefix = "discovery")
+public class DiscoveryProperties {
+    private int agentRecallTopK = 200;
+    private int skillRecallTopK = 200;
+    private int coarseTopK = 200;
+    private int fineTopK = 20;
+    private int finalTopK = 10;
+    private int maxSkillsPerAgent = 3;
+    private int minAgentRecall = 5;
+}

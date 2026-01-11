@@ -1,0 +1,27 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: agent-registry-service
+
+redis:
+  stack:
+    host: 127.0.0.1
+    port: 6379
+    username:
+    password:
+    database: 0
+    agent-index: agent_idx
+    skill-index: skill_idx
+    agent-key-prefix: "agent:"
+    skill-key-prefix: "skill:"
+    vector-dimension: 1536
+    distance-metric: COSINE
+    hnsw-m: 16
+    hnsw-ef-construction: 200
+
+dashscope:
+  api-key: ${API_KEY_DASH_SCOPE}
+  embedding-model: text-embedding-v2
+  chat-model: qwen-plus

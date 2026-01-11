@@ -116,3 +116,10 @@ public class TestController {
     }
 }
 ```
+
+## Agent 互联服务
+
+- `agent-registry-service`: AgentCard 注册与索引构建（Redis Stack）
+- `agent-discovery-service`: 召回/排序/精排（Redis Stack + DashScope）
+
+配置示例见 `agent-registry-service/src/main/resources/application.yml.template` 和 `agent-discovery-service/src/main/resources/application.yml.template`。
