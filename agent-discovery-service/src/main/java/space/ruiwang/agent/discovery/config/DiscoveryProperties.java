@@ -14,4 +14,6 @@ public class DiscoveryProperties {
     private int finalTopK = 10;
     private int maxSkillsPerAgent = 3;
     private int minAgentRecall = 5;
+    private double agentVectorDistanceThreshold = 0.7;
+    private double skillVectorDistanceThreshold = 0.7;
 }

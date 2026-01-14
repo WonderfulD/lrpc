@@ -34,3 +34,9 @@ discovery:
   final-top-k: 10
   max-skills-per-agent: 3
   min-agent-recall: 5
+  agent-vector-distance-threshold: 0.6
+  skill-vector-distance-threshold: 0.6
+
+logging:
+  level:
+    space.ruiwang.agent.discovery.service.AgentDiscoveryService: TRACE

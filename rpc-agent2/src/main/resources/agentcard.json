@@ -1,0 +1,51 @@
+{
+  "name": "travel-info",
+  "description": "提供旅行规划的数据能力：景点查询、天气查询、路线规划。",
+  "version": "1.0",
+  "documentationUrl": "https://example.com/agents/travel-info",
+  "provider": {
+    "organization": "lrpc-demo",
+    "url": "https://example.com"
+  },
+  "endpoint": {
+    "url": "http://localhost:18083/agent",
+    "transport": "HTTP"
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "spot.search",
+      "name": "spot-search",
+      "description": "查询城市/区域景点信息与评分。",
+      "version": "1.0",
+      "tags": ["attraction", "poi", "search"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"city\":\"Chengdu\"}"]
+    },
+    {
+      "id": "weather.query",
+      "name": "weather-query",
+      "description": "查询天气与 7 天游玩天气预报。",
+      "version": "1.0",
+      "tags": ["weather", "forecast"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"city\":\"Chengdu\"}"]
+    },
+    {
+      "id": "route.plan",
+      "name": "route-plan",
+      "description": "计算景点之间的路线与预计耗时。",
+      "version": "1.0",
+      "tags": ["route", "navigation", "traffic"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"from\":\"A\",\"to\":\"B\"}"]
+    }
+  ]
+}

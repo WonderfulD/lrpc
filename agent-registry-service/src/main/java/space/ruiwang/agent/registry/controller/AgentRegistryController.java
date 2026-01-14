@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import space.ruiwang.agent.registry.service.AgentRegistryService;
 import space.ruiwang.domain.agent.AgentCard;
+import space.ruiwang.domain.agent.dto.AgentDeregisterRequest;
+import space.ruiwang.domain.agent.dto.AgentHeartbeatRequest;
 
 @RestController
-@RequestMapping("/agent")
+@RequestMapping("/lrpc/agent")
 public class AgentRegistryController {
     private final AgentRegistryService registryService;
 
@@ -22,6 +24,16 @@ public class AgentRegistryController {
     @PostMapping("/register")
     public AgentCard register(@RequestBody AgentCard agent) {
         return registryService.register(agent);
+    }
+
+    @PostMapping("/heartbeat")
+    public void heartbeat(@RequestBody AgentHeartbeatRequest request) {
+        registryService.heartbeat(request == null ? null : request.getAgentId());
+    }
+
+    @PostMapping("/deregister")
+    public void deregister(@RequestBody AgentDeregisterRequest request) {
+        registryService.deregister(request == null ? null : request.getAgentId());
     }
 
     @GetMapping("/{agentId}")

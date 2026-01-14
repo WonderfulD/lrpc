@@ -20,6 +20,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.json.Path;
 import redis.clients.jedis.search.Document;
@@ -40,6 +41,7 @@ import space.ruiwang.domain.agent.document.SkillDocument;
 import space.ruiwang.domain.agent.dto.AgentDiscoverRequest;
 import space.ruiwang.domain.agent.dto.AgentDiscoverResponse;
 
+@Slf4j
 @Service
 public class AgentDiscoveryService {
     private final JedisPooled jedis;
@@ -67,23 +69,62 @@ public class AgentDiscoveryService {
             topK = discoveryProperties.getFinalTopK();
         }
 
+        Set<String> excludedAgentIds = buildExcludedAgentIds(request);
+        log.debug("Discovery start query='{}' topK={} maxAgents={} excludedAgents={}",
+                query, topK, request.getMaxAgents(), excludedAgentIds.size());
         List<Float> queryEmbedding = dashScopeClient.embed(query);
+        log.debug("Query embedding size={}", queryEmbedding == null ? 0 : queryEmbedding.size());
         Set<String> keywordAgents = recallAgentsByKeyword(query, discoveryProperties.getAgentRecallTopK());
-        Set<String> vectorAgents = recallAgentsByVector(queryEmbedding, discoveryProperties.getAgentRecallTopK());
-        Set<String> agentIds = union(keywordAgents, vectorAgents);
+        Map<String, Double> vectorAgents = recallAgentsByVector(queryEmbedding, discoveryProperties.getAgentRecallTopK());
+        log.debug("Agent recall keyword={} vector={}", keywordAgents.size(), vectorAgents.size());
+        if (CollUtil.isNotEmpty(excludedAgentIds)) {
+            int keywordBefore = keywordAgents.size();
+            int vectorBefore = vectorAgents.size();
+            filterAgentRecallByExcluded(keywordAgents, vectorAgents, excludedAgentIds);
+            log.debug("Agent recall after exclude keyword={} (removed {}) vector={} (removed {})",
+                    keywordAgents.size(), keywordBefore - keywordAgents.size(),
+                    vectorAgents.size(), vectorBefore - vectorAgents.size());
+        }
+        if (log.isTraceEnabled() && !vectorAgents.isEmpty()) {
+            log.trace("Agent vector scores sample: {}", summarizeVectorScores(vectorAgents, 8));
+        }
+        Set<String> agentIds = union(keywordAgents, vectorAgents.keySet());
+        log.debug("Agent recall union={}", agentIds.size());
+        agentIds = filterAgentsByThreshold(agentIds,
+                keywordAgents,
+                vectorAgents,
+                discoveryProperties.getAgentVectorDistanceThreshold());
+        log.debug("Agents after threshold={} (similarityThreshold={})", agentIds.size(),
+                discoveryProperties.getAgentVectorDistanceThreshold());
+        agentIds.removeAll(excludedAgentIds);
+        log.debug("Agents after exclude={}", agentIds.size());
 
         List<AgentCardDocument> agentDocs = fetchAgents(agentIds, request.getMaxAgents());
-        List<RankedSkill> candidates = expandSkillsFromAgents(agentDocs, keywordAgents, vectorAgents);
+        List<RankedSkill> candidates = expandSkillsFromAgents(agentDocs, keywordAgents, vectorAgents, excludedAgentIds);
+        log.debug("Expanded skills from agents={}", candidates.size());
 
         if (agentIds.size() < discoveryProperties.getMinAgentRecall()) {
-            candidates.addAll(recallSkillsByFallback(query, queryEmbedding, agentIds));
+            log.debug("Agent recall {} below min {}, falling back to skill recall",
+                    agentIds.size(), discoveryProperties.getMinAgentRecall());
+            List<RankedSkill> fallback = recallSkillsByFallback(query, queryEmbedding, agentIds, excludedAgentIds);
+            log.debug("Fallback skills={}", fallback.size());
+            candidates.addAll(fallback);
         }
 
         candidates = dedupeCandidates(candidates);
+        log.debug("Candidates after dedupe={}", candidates.size());
         List<RankedSkill> coarseRanked = coarseRank(candidates, query, discoveryProperties.getCoarseTopK());
+        log.debug("Candidates after coarse rank={}", coarseRanked.size());
         List<RankedSkill> fineRanked = fineRank(coarseRanked, query, discoveryProperties.getFineTopK());
+        log.debug("Candidates after fine rank={}", fineRanked.size());
+        Double minScore = request.getMinScore();
+        if (minScore != null && minScore > 0) {
+            fineRanked = filterByMinScore(fineRanked, minScore);
+            log.debug("Candidates after minScore filter={} (minScore={})", fineRanked.size(), minScore);
+        }
 
         List<RankedSkill> selected = applyDiversity(fineRanked, topK, discoveryProperties.getMaxSkillsPerAgent());
+        log.debug("Selected skills={}", selected.size());
         List<LlmSkill> skills = selected.stream()
                 .map(this::toLlmSkill)
                 .collect(Collectors.toList());
@@ -112,9 +153,9 @@ public class AgentDiscoveryService {
                 .collect(Collectors.toSet());
     }
 
-    private Set<String> recallAgentsByVector(List<Float> embedding, int topK) {
+    private Map<String, Double> recallAgentsByVector(List<Float> embedding, int topK) {
         if (CollUtil.isEmpty(embedding)) {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
         byte[] vector = VectorUtils.toFloat32ByteArray(embedding);
         Query redisQuery = new Query("*=>[KNN " + topK + " @embedding $vec AS vector_score]")
@@ -123,39 +164,78 @@ public class AgentDiscoveryService {
                 .returnFields("agentId", "vector_score")
                 .dialect(2);
         SearchResult result = jedis.ftSearch(redisProperties.getAgentIndex(), redisQuery);
-        return result.getDocuments().stream()
-                .map(Document::getId)
-                .map(this::parseAgentId)
-                .filter(StrUtil::isNotBlank)
-                .collect(Collectors.toSet());
+        Map<String, Double> scores = new HashMap<>();
+        for (Document doc : result.getDocuments()) {
+            String agentId = parseAgentId(doc.getId());
+            if (StrUtil.isBlank(agentId)) {
+                continue;
+            }
+            Double score = parseVectorScore(doc);
+            scores.put(agentId, score);
+        }
+        return scores;
     }
 
-    private List<RankedSkill> recallSkillsByFallback(String query, List<Float> embedding, Set<String> knownAgentIds) {
+    private List<RankedSkill> recallSkillsByFallback(String query,
+                                                     List<Float> embedding,
+                                                     Set<String> knownAgentIds,
+                                                     Set<String> excludedAgentIds) {
         Set<String> keywordSkills = recallSkillsByKeyword(query, discoveryProperties.getSkillRecallTopK());
-        Set<String> vectorSkills = recallSkillsByVector(embedding, discoveryProperties.getSkillRecallTopK());
-        Set<String> skillKeys = union(keywordSkills, vectorSkills);
+        Map<String, Double> vectorSkills = recallSkillsByVector(embedding, discoveryProperties.getSkillRecallTopK());
+        log.debug("Fallback recall keywordSkills={} vectorSkills={}", keywordSkills.size(), vectorSkills.size());
+        if (CollUtil.isNotEmpty(excludedAgentIds) || CollUtil.isNotEmpty(knownAgentIds)) {
+            int keywordBefore = keywordSkills.size();
+            int vectorBefore = vectorSkills.size();
+            filterSkillRecallByAgent(keywordSkills, vectorSkills, excludedAgentIds, knownAgentIds);
+            log.debug("Fallback recall after exclude keywordSkills={} (removed {}) vectorSkills={} (removed {})",
+                    keywordSkills.size(), keywordBefore - keywordSkills.size(),
+                    vectorSkills.size(), vectorBefore - vectorSkills.size());
+        }
+        if (log.isTraceEnabled() && !vectorSkills.isEmpty()) {
+            log.trace("Skill vector scores sample: {}", summarizeVectorScores(vectorSkills, 8));
+        }
+        Set<String> skillKeys = union(keywordSkills, vectorSkills.keySet());
+        log.debug("Fallback skills union={}", skillKeys.size());
         List<RankedSkill> results = new ArrayList<>();
+        int thresholdRejected = 0;
+        int inactiveRejected = 0;
+        int knownAgentRejected = 0;
+        int excludedAgentRejected = 0;
+        int missingRejected = 0;
         for (String key : skillKeys) {
+            if (!passesVectorThreshold(key, keywordSkills, vectorSkills, discoveryProperties.getSkillVectorDistanceThreshold())) {
+                thresholdRejected++;
+                continue;
+            }
             SkillDocument skill = jedis.jsonGet(key, SkillDocument.class, Path.ROOT_PATH);
             if (skill == null || StrUtil.isBlank(skill.getAgentId())) {
+                missingRejected++;
                 continue;
             }
             if (!skill.isAgentActive()) {
+                inactiveRejected++;
                 continue;
             }
             if (knownAgentIds.contains(skill.getAgentId())) {
+                knownAgentRejected++;
+                continue;
+            }
+            if (excludedAgentIds.contains(skill.getAgentId())) {
+                excludedAgentRejected++;
                 continue;
             }
             double baseScore = 0;
             if (keywordSkills.contains(key)) {
                 baseScore += 1.0;
             }
-            if (vectorSkills.contains(key)) {
+            if (vectorSkills.containsKey(key)) {
                 baseScore += 1.0;
             }
             RankedSkill ranked = new RankedSkill(toExpandedSkill(skill), baseScore);
             results.add(ranked);
         }
+        log.debug("Fallback filters: thresholdRejected={} inactiveRejected={} knownAgentRejected={} excludedAgentRejected={} missingRejected={}",
+                thresholdRejected, inactiveRejected, knownAgentRejected, excludedAgentRejected, missingRejected);
         return results;
     }
 
@@ -174,9 +254,9 @@ public class AgentDiscoveryService {
                 .collect(Collectors.toSet());
     }
 
-    private Set<String> recallSkillsByVector(List<Float> embedding, int topK) {
+    private Map<String, Double> recallSkillsByVector(List<Float> embedding, int topK) {
         if (CollUtil.isEmpty(embedding)) {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
         byte[] vector = VectorUtils.toFloat32ByteArray(embedding);
         Query redisQuery = new Query("*=>[KNN " + topK + " @embedding $vec AS vector_score]")
@@ -185,9 +265,16 @@ public class AgentDiscoveryService {
                 .returnFields("skillId", "vector_score")
                 .dialect(2);
         SearchResult result = jedis.ftSearch(redisProperties.getSkillIndex(), redisQuery);
-        return result.getDocuments().stream()
-                .map(Document::getId)
-                .collect(Collectors.toSet());
+        Map<String, Double> scores = new HashMap<>();
+        for (Document doc : result.getDocuments()) {
+            String key = doc.getId();
+            if (StrUtil.isBlank(key)) {
+                continue;
+            }
+            Double score = parseVectorScore(doc);
+            scores.put(key, score);
+        }
+        return scores;
     }
 
     private List<AgentCardDocument> fetchAgents(Set<String> agentIds, Integer maxAgents) {
@@ -225,7 +312,8 @@ public class AgentDiscoveryService {
 
     private List<RankedSkill> expandSkillsFromAgents(List<AgentCardDocument> agents,
                                                      Set<String> keywordAgents,
-                                                     Set<String> vectorAgents) {
+                                                     Map<String, Double> vectorAgents,
+                                                     Set<String> excludedAgentIds) {
         if (CollUtil.isEmpty(agents)) {
             return Collections.emptyList();
         }
@@ -237,11 +325,14 @@ public class AgentDiscoveryService {
             if (!agent.isActive()) {
                 continue;
             }
+            if (excludedAgentIds.contains(agent.getAgentId())) {
+                continue;
+            }
             double baseScore = 0;
             if (keywordAgents.contains(agent.getAgentId())) {
                 baseScore += 1.0;
             }
-            if (vectorAgents.contains(agent.getAgentId())) {
+            if (vectorAgents.containsKey(agent.getAgentId())) {
                 baseScore += 1.0;
             }
             for (SkillCard skill : agent.getSkills()) {
@@ -381,6 +472,7 @@ public class AgentDiscoveryService {
         llmSkill.setSkillId(skill.getSkillId());
         llmSkill.setName(skill.getSkillName());
         llmSkill.setDescription(skill.getSkillDescription());
+        llmSkill.setScore(ranked.score);
         llmSkill.setTags(skill.getTags());
         llmSkill.setInputModes(skill.getInputModes());
         llmSkill.setOutputModes(skill.getOutputModes());
@@ -488,12 +580,187 @@ public class AgentDiscoveryService {
         return result;
     }
 
+    private Set<String> buildExcludedAgentIds(AgentDiscoverRequest request) {
+        Set<String> excluded = new HashSet<>();
+        if (request == null) {
+            return excluded;
+        }
+        if (StrUtil.isNotBlank(request.getCallerAgentId())) {
+            excluded.add(request.getCallerAgentId().trim());
+        }
+        if (CollUtil.isNotEmpty(request.getExcludeAgentIds())) {
+            for (String agentId : request.getExcludeAgentIds()) {
+                if (StrUtil.isNotBlank(agentId)) {
+                    excluded.add(agentId.trim());
+                }
+            }
+        }
+        return excluded;
+    }
+
+    private Set<String> filterAgentsByThreshold(Set<String> agentIds,
+                                                Set<String> keywordAgents,
+                                                Map<String, Double> vectorAgents,
+                                                double threshold) {
+        if (CollUtil.isEmpty(agentIds)) {
+            return Collections.emptySet();
+        }
+        Set<String> filtered = new HashSet<>();
+        int thresholdRejected = 0;
+        for (String agentId : agentIds) {
+            if (passesVectorThreshold(agentId, keywordAgents, vectorAgents, threshold)) {
+                filtered.add(agentId);
+            } else {
+                thresholdRejected++;
+            }
+        }
+        log.debug("Agent threshold rejected={}", thresholdRejected);
+        return filtered;
+    }
+
+    private boolean passesVectorThreshold(String key,
+                                          Set<String> keywordMatches,
+                                          Map<String, Double> vectorScores,
+                                          double threshold) {
+        if (StrUtil.isBlank(key)) {
+            return false;
+        }
+        Double score = vectorScores == null ? null : vectorScores.get(key);
+        if (score != null) {
+            double similarity = toSimilarityNormalized(score);
+            return similarity >= threshold;
+        }
+        return keywordMatches != null && keywordMatches.contains(key);
+    }
+
+    private Double parseVectorScore(Document doc) {
+        if (doc == null) {
+            return null;
+        }
+        Object raw = doc.get("vector_score");
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number) {
+            return ((Number) raw).doubleValue();
+        }
+        String value = raw.toString();
+        if (StrUtil.isBlank(value)) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String summarizeVectorScores(Map<String, Double> scores, int limit) {
+        return scores.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .limit(limit)
+                .map(entry -> formatScoreSample(entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(", "));
+    }
+
+    private List<RankedSkill> filterByMinScore(List<RankedSkill> candidates, double minScore) {
+        if (CollUtil.isEmpty(candidates)) {
+            return Collections.emptyList();
+        }
+        return candidates.stream()
+                .filter(candidate -> candidate.score >= minScore)
+                .collect(Collectors.toList());
+    }
+
+    private String formatScoreSample(String key, Double distance) {
+        if (distance == null) {
+            return key + "=null";
+        }
+        double similarity = toSimilarityNormalized(distance);
+        return key + "=" + distance + "(sim=" + String.format(Locale.ROOT, "%.3f", similarity) + ")";
+    }
+
+    private double toSimilarityNormalized(double distance) {
+        double similarity = 1.0 - (distance / 2.0);
+        if (similarity < 0.0) {
+            return 0.0;
+        }
+        if (similarity > 1.0) {
+            return 1.0;
+        }
+        return similarity;
+    }
+
     private String parseAgentId(String key) {
         String prefix = redisProperties.getAgentKeyPrefix();
         if (StrUtil.isNotBlank(prefix) && key.startsWith(prefix)) {
             return key.substring(prefix.length());
         }
         return key;
+    }
+
+    private String parseAgentIdFromSkillKey(String key) {
+        if (StrUtil.isBlank(key)) {
+            return "";
+        }
+        String prefix = redisProperties.getSkillKeyPrefix();
+        String normalized = key;
+        if (StrUtil.isNotBlank(prefix) && normalized.startsWith(prefix)) {
+            normalized = normalized.substring(prefix.length());
+        }
+        int index = normalized.indexOf(':');
+        if (index <= 0) {
+            return "";
+        }
+        return normalized.substring(0, index);
+    }
+
+    private void filterAgentRecallByExcluded(Set<String> keywordAgents,
+                                             Map<String, Double> vectorAgents,
+                                             Set<String> excludedAgentIds) {
+        if (CollUtil.isEmpty(excludedAgentIds)) {
+            return;
+        }
+        if (CollUtil.isNotEmpty(keywordAgents)) {
+            keywordAgents.removeAll(excludedAgentIds);
+        }
+        if (vectorAgents != null && !vectorAgents.isEmpty()) {
+            vectorAgents.keySet().removeAll(excludedAgentIds);
+        }
+    }
+
+    private void filterSkillRecallByAgent(Set<String> keywordSkills,
+                                          Map<String, Double> vectorSkills,
+                                          Set<String> excludedAgentIds,
+                                          Set<String> knownAgentIds) {
+        Set<String> blocked = new HashSet<>();
+        if (CollUtil.isNotEmpty(excludedAgentIds)) {
+            blocked.addAll(excludedAgentIds);
+        }
+        if (CollUtil.isNotEmpty(knownAgentIds)) {
+            blocked.addAll(knownAgentIds);
+        }
+        if (blocked.isEmpty()) {
+            return;
+        }
+        if (CollUtil.isNotEmpty(keywordSkills)) {
+            for (var iterator = keywordSkills.iterator(); iterator.hasNext(); ) {
+                String key = iterator.next();
+                String agentId = parseAgentIdFromSkillKey(key);
+                if (blocked.contains(agentId)) {
+                    iterator.remove();
+                }
+            }
+        }
+        if (vectorSkills != null && !vectorSkills.isEmpty()) {
+            for (var iterator = vectorSkills.entrySet().iterator(); iterator.hasNext(); ) {
+                Map.Entry<String, Double> entry = iterator.next();
+                String agentId = parseAgentIdFromSkillKey(entry.getKey());
+                if (blocked.contains(agentId)) {
+                    iterator.remove();
+                }
+            }
+        }
     }
 
     private static final class RankedSkill {

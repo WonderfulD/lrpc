@@ -14,6 +14,7 @@ public class LlmSkill implements Serializable {
     private String skillId;
     private String name;
     private String description;
+    private Double score;
     private List<String> tags;
     private List<String> inputModes;
     private List<String> outputModes;

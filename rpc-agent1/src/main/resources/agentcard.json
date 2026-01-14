@@ -1,0 +1,41 @@
+{
+  "name": "travel-planner",
+  "description": "负责旅行规划：拆解需求、组合景点/天气/路线信息生成行程方案，并调用外部能力补齐信息。",
+  "version": "1.0",
+  "documentationUrl": "https://example.com/agents/travel-planner",
+  "provider": {
+    "organization": "lrpc-demo",
+    "url": "https://example.com"
+  },
+  "endpoint": {
+    "url": "http://localhost:18082/agent",
+    "transport": "HTTP"
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "travel.plan",
+      "name": "travel-plan",
+      "description": "根据城市和天数生成行程规划草案。",
+      "version": "1.0",
+      "tags": ["travel", "itinerary", "planning"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"city\":\"Chengdu\",\"days\":3}"]
+    },
+    {
+      "id": "travel.refine",
+      "name": "travel-refine",
+      "description": "根据预算/偏好优化行程安排。",
+      "version": "1.0",
+      "tags": ["optimize", "budget", "time"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"budget\":\"3000\",\"preference\":\"food\"}"]
+    }
+  ]
+}

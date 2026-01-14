@@ -25,3 +25,17 @@ dashscope:
   api-key: ${API_KEY_DASH_SCOPE}
   embedding-model: text-embedding-v2
   chat-model: qwen-plus
+
+registry:
+  heartbeat:
+    ttl-seconds: 90
+  health-check:
+    enabled: true
+    interval-seconds: 30
+    timeout-ms: 2000
+    failure-threshold: 3
+    health-path: /lrpc/agent/health
+  cleanup:
+    enabled: true
+    interval-seconds: 3600
+    inactive-ttl-seconds: 604800

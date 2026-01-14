@@ -17,7 +17,9 @@ import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.json.Path;
 import space.ruiwang.agent.dashscope.DashScopeClient;
 import space.ruiwang.agent.registry.config.RedisStackProperties;
+import space.ruiwang.agent.registry.config.RegistryHeartbeatProperties;
 import space.ruiwang.agent.util.AgentKeyBuilder;
+import space.ruiwang.agent.registry.util.AgentIdentityUtil;
 import space.ruiwang.domain.agent.AgentCard;
 import space.ruiwang.domain.agent.AgentEndpoint;
 import space.ruiwang.domain.agent.AgentProvider;
@@ -30,16 +32,22 @@ public class AgentRegistryService {
     private final JedisPooled jedis;
     private final DashScopeClient dashScopeClient;
     private final RedisStackProperties properties;
+    private final RegistryHeartbeatProperties heartbeatProperties;
 
-    public AgentRegistryService(JedisPooled jedis, DashScopeClient dashScopeClient, RedisStackProperties properties) {
+    public AgentRegistryService(JedisPooled jedis,
+                                DashScopeClient dashScopeClient,
+                                RedisStackProperties properties,
+                                RegistryHeartbeatProperties heartbeatProperties) {
         this.jedis = jedis;
         this.dashScopeClient = dashScopeClient;
         this.properties = properties;
+        this.heartbeatProperties = heartbeatProperties;
     }
 
     public AgentCard register(AgentCard agent) {
         validateAgentCard(agent);
-        AgentCardDocument existing = getAgentDocument(agent.getAgentId());
+        String agentId = StrUtil.blankToDefault(agent.getAgentId(), resolveAgentId(agent));
+        AgentCardDocument existing = getAgentDocument(agentId);
         if (existing != null && CollUtil.isNotEmpty(existing.getSkills())) {
             for (SkillCard skill : existing.getSkills()) {
                 if (StrUtil.isNotBlank(skill.getId())) {
@@ -47,7 +55,6 @@ public class AgentRegistryService {
                 }
             }
         }
-        String agentId = StrUtil.blankToDefault(agent.getAgentId(), IdUtil.simpleUUID());
         agent.setAgentId(agentId);
         agent.setActive(true);
         agent.setLastModifiedTime(nowIso());
@@ -66,6 +73,9 @@ public class AgentRegistryService {
         AgentCardDocument document = BeanUtil.copyProperties(agent, AgentCardDocument.class);
         document.setEmbedding(agentEmbedding);
         jedis.jsonSet(AgentKeyBuilder.agentKey(properties.getAgentKeyPrefix(), agentId), Path.ROOT_PATH, document);
+        ensureIdentityMapping(agent);
+        registerAgentId(agentId);
+        refreshHeartbeat(agentId);
 
         for (SkillCard skill : agent.getSkills()) {
             normalizeSkill(agent, skill);
@@ -75,6 +85,39 @@ public class AgentRegistryService {
                     skillDocument);
         }
         return agent;
+    }
+
+    public void heartbeat(String agentId) {
+        if (StrUtil.isBlank(agentId)) {
+            throw new IllegalArgumentException("AgentId is required");
+        }
+        if (getAgentDocument(agentId) == null) {
+            throw new IllegalArgumentException("Agent not found: " + agentId);
+        }
+        registerAgentId(agentId);
+        refreshHeartbeat(agentId);
+    }
+
+    public void deregister(String agentId) {
+        if (StrUtil.isBlank(agentId)) {
+            throw new IllegalArgumentException("AgentId is required");
+        }
+        updateAgentActive(agentId, false);
+        jedis.del(AgentKeyBuilder.agentAliveKey(properties.getAgentKeyPrefix(), agentId));
+        jedis.del(AgentKeyBuilder.agentHealthFailKey(properties.getAgentKeyPrefix(), agentId));
+        jedis.srem(AgentKeyBuilder.agentIdsKey(properties.getAgentKeyPrefix()), agentId);
+    }
+
+    public void updateAgentActive(String agentId, boolean active) {
+        if (StrUtil.isBlank(agentId)) {
+            return;
+        }
+        String agentKey = AgentKeyBuilder.agentKey(properties.getAgentKeyPrefix(), agentId);
+        AgentCardDocument document = jedis.jsonGet(agentKey, AgentCardDocument.class, Path.ROOT_PATH);
+        if (document == null) {
+            return;
+        }
+        markAgentActive(document, active);
     }
 
     public AgentCard getAgent(String agentId) {
@@ -177,5 +220,73 @@ public class AgentRegistryService {
 
     private String nowIso() {
         return OffsetDateTime.now(ZoneOffset.ofHours(8)).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    private void registerAgentId(String agentId) {
+        jedis.sadd(AgentKeyBuilder.agentIdsKey(properties.getAgentKeyPrefix()), agentId);
+    }
+
+    private void refreshHeartbeat(String agentId) {
+        int ttlSeconds = heartbeatProperties.getTtlSeconds();
+        if (ttlSeconds <= 0) {
+            ttlSeconds = 90;
+        }
+        jedis.setex(AgentKeyBuilder.agentAliveKey(properties.getAgentKeyPrefix(), agentId), ttlSeconds, "1");
+    }
+
+    private void markAgentActive(AgentCardDocument document, boolean active) {
+        if (document == null) {
+            return;
+        }
+        String agentId = document.getAgentId();
+        String agentKey = AgentKeyBuilder.agentKey(properties.getAgentKeyPrefix(), agentId);
+        jedis.jsonSet(agentKey, Path.of("$.active"), active);
+        updateInactiveIndex(agentId, active);
+        if (CollUtil.isNotEmpty(document.getSkills())) {
+            for (SkillCard skill : document.getSkills()) {
+                if (skill == null || StrUtil.isBlank(skill.getId())) {
+                    continue;
+                }
+                String skillKey = AgentKeyBuilder.skillKey(properties.getSkillKeyPrefix(), agentId, skill.getId());
+                jedis.jsonSet(skillKey, Path.of("$.agentActive"), active);
+            }
+        }
+    }
+
+    private String resolveAgentId(AgentCard agent) {
+        String hash = AgentIdentityUtil.identityHash(agent);
+        if (StrUtil.isBlank(hash)) {
+            return IdUtil.simpleUUID();
+        }
+        String identityKey = AgentKeyBuilder.agentIdentityKey(properties.getAgentKeyPrefix(), hash);
+        String existing = jedis.get(identityKey);
+        if (StrUtil.isNotBlank(existing)) {
+            return existing;
+        }
+        String agentId = IdUtil.simpleUUID();
+        Long set = jedis.setnx(identityKey, agentId);
+        if (set != null && set == 1L) {
+            return agentId;
+        }
+        String after = jedis.get(identityKey);
+        return StrUtil.blankToDefault(after, agentId);
+    }
+
+    private void ensureIdentityMapping(AgentCard agent) {
+        String hash = AgentIdentityUtil.identityHash(agent);
+        if (StrUtil.isBlank(hash) || StrUtil.isBlank(agent.getAgentId())) {
+            return;
+        }
+        String identityKey = AgentKeyBuilder.agentIdentityKey(properties.getAgentKeyPrefix(), hash);
+        jedis.setnx(identityKey, agent.getAgentId());
+    }
+
+    private void updateInactiveIndex(String agentId, boolean active) {
+        String key = AgentKeyBuilder.agentInactiveKey(properties.getAgentKeyPrefix());
+        if (active) {
+            jedis.zrem(key, agentId);
+        } else {
+            jedis.zadd(key, System.currentTimeMillis(), agentId);
+        }
     }
 }
