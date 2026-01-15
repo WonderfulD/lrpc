@@ -15,15 +15,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.ObjectProvider;
 
 import lombok.extern.slf4j.Slf4j;
+import space.ruiwang.annotation.RpcAgentService;
 import space.ruiwang.annotation.RpcService;
 import space.ruiwang.api.jobfactory.IJobFactory;
 import space.ruiwang.api.serviceregister.sub.IRemoteServiceRegister;
 import space.ruiwang.api.transport.RpcProvider;
+import space.ruiwang.domain.agent.AgentCard;
+import space.ruiwang.domain.agent.AgentProvider;
 import space.ruiwang.domain.ServiceMetaData;
 import space.ruiwang.servicemanager.ServiceRegisterUtil;
+import space.ruiwang.servicemanager.ServiceMapHolder;
 import space.ruiwang.utils.RpcServiceKeyBuilder;
 
 /**
@@ -40,6 +46,8 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
     private int port;
     @Autowired
     private IRemoteServiceRegister remoteServiceRegister;
+    @Autowired
+    private ObjectProvider<AgentCard> agentCardProvider;
     @Resource
     private IJobFactory jobFactory;
 
@@ -60,8 +68,9 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
         Class<?> beanClass = bean.getClass();
         // 检查类是否有 @RpcService 注解
-        RpcService rpcServiceAnnotation = beanClass.getAnnotation(RpcService.class);
+        RpcService rpcServiceAnnotation = AnnotatedElementUtils.findMergedAnnotation(beanClass, RpcService.class);
         if (rpcServiceAnnotation != null) {
+            boolean agentService = AnnotatedElementUtils.hasAnnotation(beanClass, RpcAgentService.class);
             String serviceVersion = rpcServiceAnnotation.serviceVersion();
             Class<?> serviceName = rpcServiceAnnotation.service();
             if (serviceName == void.class) {
@@ -89,9 +98,27 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
 
             long ttl = rpcServiceAnnotation.ttl();
 
+            String serviceNameValue = serviceName.getName();
+            if (agentService) {
+                AgentCard agentCard = requireAgentCard();
+                AgentProvider provider = agentCard.getProvider();
+                if (provider == null || provider.getOrganization() == null || provider.getOrganization().isBlank()) {
+                    throw new IllegalStateException("Agent provider organization is required for @RpcAgentService");
+                }
+                if (agentCard.getName() == null || agentCard.getName().isBlank()) {
+                    throw new IllegalStateException("Agent name is required for @RpcAgentService");
+                }
+                if (agentCard.getVersion() == null || agentCard.getVersion().isBlank()) {
+                    throw new IllegalStateException("Agent version is required for @RpcAgentService");
+                }
+                serviceNameValue = provider.getOrganization().trim() + "@" + agentCard.getName().trim();
+                serviceVersion = agentCard.getVersion().trim();
+                ServiceMapHolder.putService(serviceNameValue, bean);
+            }
+
             // 构造服务注册对象
             serviceMetaData =
-                    new ServiceMetaData(serviceName.getName(), serviceVersion, address, port, ttl);
+                    new ServiceMetaData(serviceNameValue, serviceVersion, address, port, ttl);
             // 注册服务到远程
             remoteServiceRegister.register(serviceMetaData);
 
@@ -99,6 +126,14 @@ public class RpcServiceBeanPostProcessor implements EnvironmentAware, BeanPostPr
             serviceRenewal(ttl, TimeUnit.MILLISECONDS);
         }
         return bean;
+    }
+
+    private AgentCard requireAgentCard() {
+        AgentCard agentCard = agentCardProvider.getIfAvailable();
+        if (agentCard == null) {
+            throw new IllegalStateException("AgentCard bean or classpath:agentcard.json is required for @RpcAgentService");
+        }
+        return agentCard;
     }
 
     @PreDestroy

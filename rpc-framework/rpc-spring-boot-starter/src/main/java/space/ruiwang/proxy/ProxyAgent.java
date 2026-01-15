@@ -12,6 +12,7 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -28,6 +29,9 @@ import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.RpcResponseDTO;
 import space.ruiwang.domain.ServiceInstance;
 import space.ruiwang.domain.ServiceMetaData;
+import space.ruiwang.domain.agent.invoke.AgentInvokeRequest;
+import space.ruiwang.domain.agent.invoke.AgentInvokeResponse;
+import space.ruiwang.agent.invoke.AgentInvokeHandler;
 import space.ruiwang.exception.RetryLimitExceededException;
 import space.ruiwang.tolerant.FaultTolerant;
 
@@ -45,13 +49,23 @@ public class ProxyAgent {
     private IServiceSelector serviceSelector;
     @Autowired
     private ILocalServiceRegister localServiceRegister;
+    @Autowired
+    private ObjectProvider<AgentInvokeHandler> agentInvokeHandlerProvider;
 
     public <T> T getProxy(Class<T> interfaceClass, String serviceVersion, RpcRequestConfig rpcRequestConfig) {
+        return getProxy(interfaceClass, interfaceClass.getName(), serviceVersion, rpcRequestConfig);
+    }
+
+    public <T> T getProxy(Class<T> interfaceClass, String serviceName, String serviceVersion,
+            RpcRequestConfig rpcRequestConfig) {
         Object proxyInstance = Proxy.newProxyInstance(ProxyAgent.class.getClassLoader(), new Class<?>[]{interfaceClass},
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) {
-                        RpcRequestDTO rpcRequestDTO = buildRpcRequestDTO(interfaceClass.getName(),
+                        String resolvedServiceName = serviceName == null || serviceName.isBlank()
+                                ? interfaceClass.getName()
+                                : serviceName;
+                        RpcRequestDTO rpcRequestDTO = buildRpcRequestDTO(resolvedServiceName,
                                                                          serviceVersion,
                                                                          method.getName(),
                                                                          method.getParameterTypes(),
@@ -68,6 +82,50 @@ public class ProxyAgent {
                     }
                 });
         return interfaceClass.cast(proxyInstance);
+    }
+
+    public <T> T getAgentInvokeProxy(Class<T> interfaceClass, AgentInvokeHandler handler) {
+        Object proxyInstance = Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class<?>[]{interfaceClass},
+                new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        if (method.getDeclaringClass() == Object.class) {
+                            return method.invoke(this, args);
+                        }
+                        if (!"invoke".equals(method.getName())
+                                || method.getParameterCount() != 1
+                                || method.getParameterTypes()[0] != AgentInvokeRequest.class) {
+                            throw new UnsupportedOperationException("Only invoke(AgentInvokeRequest) is supported");
+                        }
+                        AgentInvokeRequest request = args == null || args.length == 0
+                                ? null
+                                : (AgentInvokeRequest) args[0];
+                        AgentInvokeResponse response = handler.invoke(request);
+                        Class<?> returnType = method.getReturnType();
+                        if (returnType == Void.TYPE) {
+                            return null;
+                        }
+                        if (returnType.isAssignableFrom(AgentInvokeResponse.class)) {
+                            return response;
+                        }
+                        if (returnType == String.class) {
+                            return response == null ? null : response.getAnswer();
+                        }
+                        if (returnType == Object.class) {
+                            return response;
+                        }
+                        throw new UnsupportedOperationException("Unsupported return type for invoke(AgentInvokeRequest)");
+                    }
+                });
+        return interfaceClass.cast(proxyInstance);
+    }
+
+    public <T> T getAgentInvokeProxy(Class<T> interfaceClass) {
+        AgentInvokeHandler handler = agentInvokeHandlerProvider.getIfAvailable();
+        if (handler == null) {
+            throw new IllegalStateException("AgentInvokeHandler bean is required for @RpcAgentReference");
+        }
+        return getAgentInvokeProxy(interfaceClass, handler);
     }
 
     private Object handle(RpcRequestDTO rpcRequestDTO, RpcRequestConfig rpcRequestConfig, List<ServiceMetaData> excludedServices) {

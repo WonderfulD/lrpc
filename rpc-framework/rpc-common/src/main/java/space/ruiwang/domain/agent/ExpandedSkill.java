@@ -15,6 +15,8 @@ public class ExpandedSkill implements Serializable {
     private String agentDescription;
     private boolean agentActive;
     private AgentEndpoint endpoint;
+    private String agentOrganization;
+    private String agentVersion;
 
     private String skillId;
     private String skillName;

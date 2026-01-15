@@ -13,7 +13,7 @@ import space.ruiwang.constants.LoadBalancerStrategies;
  * @author wangrui <wangrui45@kuaishou.com>
  * Created on 2025-02-12
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RpcReference {
     /**

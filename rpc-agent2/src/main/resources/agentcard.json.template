@@ -28,8 +28,8 @@
   "endpoint": {
     // Required: base URL for calls.
     "url": "http://localhost:18080/agent",
-    // Required: transport type, e.g. HTTP.
-    "transport": "HTTP"
+    // Required: transport types, e.g. ["HTTP"] or ["HTTP","RPC"].
+    "transport": ["HTTP", "RPC"]
   },
 
   // Optional capabilities.

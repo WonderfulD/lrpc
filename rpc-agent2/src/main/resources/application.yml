@@ -6,6 +6,8 @@ spring:
     name: rpc-agent2
 
 lrpc:
+  provider:
+    port: 19083
   agent:
     enabled: true
     registry-base-url: http://localhost:18080

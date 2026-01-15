@@ -21,4 +21,6 @@ public class LlmSkill implements Serializable {
     private AgentEndpoint endpoint;
     private String agentName;
     private String agentDescription;
+    private String agentOrganization;
+    private String agentVersion;
 }

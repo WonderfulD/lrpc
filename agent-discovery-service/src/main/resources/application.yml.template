@@ -39,4 +39,4 @@ discovery:
 
 logging:
   level:
-    space.ruiwang.agent.discovery.service.AgentDiscoveryService: TRACE
+    service.space.ruiwang.AgentDiscoveryService: TRACE

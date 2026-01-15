@@ -9,7 +9,7 @@
   },
   "endpoint": {
     "url": "http://localhost:18083/agent",
-    "transport": "HTTP"
+    "transport": ["HTTP", "RPC"]
   },
   "capabilities": {
     "streaming": false
