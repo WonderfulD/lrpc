@@ -1,0 +1,51 @@
+{
+  "name": "book-recommender",
+  "description": "提供图书推荐与解读能力，涵盖热门图书、分类推荐、梗概与人物。",
+  "version": "1.0",
+  "documentationUrl": "https://example.com/agents/book-recommender",
+  "provider": {
+    "organization": "lrpc-demo",
+    "url": "https://example.com"
+  },
+  "endpoint": {
+    "url": "http://localhost:18085/agent",
+    "transport": ["HTTP", "RPC"]
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "book.trending",
+      "name": "book-trending",
+      "description": "查询近期热门图书榜单与推荐理由。",
+      "version": "1.0",
+      "tags": ["book", "trending", "recommend"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"region\":\"CN\",\"limit\":10}"]
+    },
+    {
+      "id": "book.recommend",
+      "name": "book-recommend",
+      "description": "根据传入的类型/主题推荐图书。",
+      "version": "1.0",
+      "tags": ["book", "genre", "recommend"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"genre\":\"sci-fi\",\"count\":5}"]
+    },
+    {
+      "id": "book.summary",
+      "name": "book-summary",
+      "description": "给出传入图书的故事梗概与主要人物。",
+      "version": "1.0",
+      "tags": ["book", "summary", "characters"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"title\":\"The Three-Body Problem\",\"author\":\"Liu Cixin\"}"]
+    }
+  ]
+}

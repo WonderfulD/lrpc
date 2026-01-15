@@ -18,6 +18,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import space.ruiwang.agent.invoke.AgentInvokeHandler;
 import space.ruiwang.domain.agent.AgentCard;
 import space.ruiwang.proxy.ProxyAgent;
+import space.ruiwang.domain.agent.invoke.AgentSkillService;
+import space.ruiwang.AgentSkillExecutor;
+import space.ruiwang.AgentInvokeClient;
 
 @Configuration
 @EnableScheduling
@@ -91,6 +94,18 @@ public class RpcAgentAutoConfiguration {
                                                  RpcAgentSkillExecutor skillExecutor,
                                                  space.ruiwang.agent.dashscope.DashScopeClient dashScopeClient) {
         return new DefaultAgentInvokeHandler(discoveryClient, skillExecutor, dashScopeClient);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AgentInvokeClient agentInvokeClient(ProxyAgent proxyAgent) {
+        return proxyAgent.getAgentInvokeProxy(AgentInvokeClient.class);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AgentSkillService.class)
+    public AgentSkillService agentSkillService(ObjectProvider<AgentSkillExecutor> executorProvider) {
+        return new DefaultAgentSkillRpcService(executorProvider);
     }
 
     @Bean

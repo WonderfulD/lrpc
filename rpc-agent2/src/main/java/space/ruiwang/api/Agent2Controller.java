@@ -1,7 +1,5 @@
 package space.ruiwang.api;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,18 +8,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import space.ruiwang.agent.dashscope.DashScopeClient;
-import space.ruiwang.agent.dashscope.DashScopeMessage;
+import space.ruiwang.AgentInvokeClient;
+import space.ruiwang.domain.agent.invoke.AgentInvokeRequest;
+import space.ruiwang.domain.agent.invoke.AgentInvokeResponse;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeRequest;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeResponse;
 
 @RestController
 public class Agent2Controller {
-    private final DashScopeClient dashScopeClient;
+    private final AgentInvokeClient invokeClient;
     private final Agent2SkillExecutor skillExecutor;
 
-    public Agent2Controller(DashScopeClient dashScopeClient, Agent2SkillExecutor skillExecutor) {
-        this.dashScopeClient = dashScopeClient;
+    public Agent2Controller(AgentInvokeClient invokeClient, Agent2SkillExecutor skillExecutor) {
+        this.invokeClient = invokeClient;
         this.skillExecutor = skillExecutor;
     }
 
@@ -31,14 +30,17 @@ public class Agent2Controller {
         if (query == null || query.isBlank()) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "query is required"));
         }
-        String systemPrompt = "You are a travel info agent. Provide concise factual travel data and suggestions.";
-        String userPrompt = "User request: " + query.trim();
-        return chat(systemPrompt, userPrompt)
-                .map(answer -> {
-                    UserTaskResponse response = new UserTaskResponse();
-                    response.setAnswer(answer);
-                    return response;
-                });
+        return Mono.fromCallable(() -> {
+                    AgentInvokeRequest invokeRequest = new AgentInvokeRequest();
+                    invokeRequest.setQuery(query.trim());
+                    invokeRequest.setMaxSkills(6);
+                    invokeRequest.setMinScore(0.6);
+                    AgentInvokeResponse response = invokeClient.invoke(invokeRequest);
+                    UserTaskResponse result = new UserTaskResponse();
+                    result.setAnswer(response == null ? "" : response.getAnswer());
+                    return result;
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PostMapping("/agent")
@@ -49,14 +51,6 @@ public class Agent2Controller {
                         e -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage()))
                 .onErrorMap(IllegalStateException.class,
                         e -> new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage()));
-    }
-
-    private Mono<String> chat(String systemPrompt, String userPrompt) {
-        return Mono.fromCallable(() -> dashScopeClient.chat(List.of(
-                        new DashScopeMessage("system", systemPrompt),
-                        new DashScopeMessage("user", userPrompt)
-                )))
-                .subscribeOn(Schedulers.boundedElastic());
     }
 
 }

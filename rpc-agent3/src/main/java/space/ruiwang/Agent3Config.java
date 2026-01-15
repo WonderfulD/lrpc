@@ -19,7 +19,7 @@ public class Agent3Config {
     public AgentCard agentCard(Environment environment) {
         AgentCard agent = new AgentCard();
         agent.setName("entertainment-trends");
-        agent.setDescription("提供热门音乐/电影榜单查询，与旅行规划无关。");
+        agent.setDescription("提供热门音乐/电影榜单查询。");
         agent.setVersion("1.0");
         agent.setDocumentationUrl("https://example.com/agents/entertainment-trends");
 

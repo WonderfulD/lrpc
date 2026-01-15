@@ -5,12 +5,6 @@ spring:
   application:
     name: rpc-agent1
 
-agent1:
-  auto-discover: true
-  query: "规划三天旅游行程，优先推荐热门景点"
-  max-skills: 10
-  min-score: 0.6
-
 lrpc:
   provider:
     port: 19082
@@ -22,3 +16,4 @@ lrpc:
 dashscope:
   api-key: ${API_KEY_DASH_SCOPE}
   chat-model: qwen-plus
+  timeout-seconds: 120

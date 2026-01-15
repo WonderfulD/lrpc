@@ -16,3 +16,4 @@ lrpc:
 dashscope:
   api-key: ${API_KEY_DASH_SCOPE}
   chat-model: qwen-plus
+  timeout-seconds: 120

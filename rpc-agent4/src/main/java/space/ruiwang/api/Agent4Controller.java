@@ -1,5 +1,6 @@
 package space.ruiwang.api;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,12 +16,13 @@ import space.ruiwang.domain.agent.invoke.AgentSkillInvokeRequest;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeResponse;
 
 @RestController
-public class Agent3Controller {
-    private final AgentInvokeClient invokeClient;
-    private final Agent3SkillExecutor skillExecutor;
+public class Agent4Controller {
+    private final Agent4SkillExecutor skillExecutor;
 
-    public Agent3Controller(AgentInvokeClient invokeClient, Agent3SkillExecutor skillExecutor) {
-        this.invokeClient = invokeClient;
+    @Autowired
+    private AgentInvokeClient invokeClient;
+
+    public Agent4Controller(Agent4SkillExecutor skillExecutor) {
         this.skillExecutor = skillExecutor;
     }
 
@@ -52,5 +54,4 @@ public class Agent3Controller {
                 .onErrorMap(IllegalStateException.class,
                         e -> new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage()));
     }
-
 }

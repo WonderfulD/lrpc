@@ -13,11 +13,11 @@ import space.ruiwang.domain.agent.invoke.AgentSkillInvokeRequest;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeResponse;
 
 @Component
-public class Agent3SkillExecutor implements AgentSkillExecutor {
+public class Agent4SkillExecutor implements AgentSkillExecutor {
     private final DashScopeClient dashScopeClient;
     private final ObjectMapper objectMapper;
 
-    public Agent3SkillExecutor(DashScopeClient dashScopeClient, ObjectMapper objectMapper) {
+    public Agent4SkillExecutor(DashScopeClient dashScopeClient, ObjectMapper objectMapper) {
         this.dashScopeClient = dashScopeClient;
         this.objectMapper = objectMapper;
     }
@@ -28,16 +28,20 @@ public class Agent3SkillExecutor implements AgentSkillExecutor {
         }
         String skillId = request.getSkillId().trim();
         String input = formatInput(request.getInput(), request.getQuery());
-        String systemPrompt = "You are an entertainment trends agent. Return JSON only.";
+        String systemPrompt = "You are a book recommendation agent. Return JSON only.";
         String userPrompt;
         switch (skillId) {
-            case "music.trending":
-                userPrompt = "Provide trending music based on input: " + input
-                        + ". Return JSON {region,tracks:[{title,artist,reason}]}";
+            case "book.trending":
+                userPrompt = "List trending books from input: " + input
+                        + ". Return JSON {items:[{title,author,reason,region}],updatedAt}";
                 break;
-            case "movie.trending":
-                userPrompt = "Provide trending movies based on input: " + input
-                        + ". Return JSON {region,films:[{title,genre,reason}]}";
+            case "book.recommend":
+                userPrompt = "Recommend books by genre/topic from input: " + input
+                        + ". Return JSON {genre,items:[{title,author,reason}]}";
+                break;
+            case "book.summary":
+                userPrompt = "Summarize the book from input: " + input
+                        + ". Return JSON {title,summary,mainCharacters:[...]}";
                 break;
             default:
                 throw new IllegalStateException("Unknown skillId");

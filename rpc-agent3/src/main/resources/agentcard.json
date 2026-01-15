@@ -1,6 +1,6 @@
 {
   "name": "entertainment-trends",
-  "description": "提供热门音乐/电影榜单查询，与旅行规划无关。",
+  "description": "提供热门音乐/电影榜单查询。",
   "version": "1.0",
   "documentationUrl": "https://example.com/agents/entertainment-trends",
   "provider": {

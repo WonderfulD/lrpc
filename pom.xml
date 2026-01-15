@@ -20,6 +20,7 @@
         <module>rpc-agent1</module>
         <module>rpc-agent2</module>
         <module>rpc-agent3</module>
+        <module>rpc-agent4</module>
     </modules>
 
     <properties>

@@ -6,13 +6,14 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import space.ruiwang.AgentSkillExecutor;
 import space.ruiwang.agent.dashscope.DashScopeClient;
 import space.ruiwang.agent.dashscope.DashScopeMessage;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeRequest;
 import space.ruiwang.domain.agent.invoke.AgentSkillInvokeResponse;
 
 @Component
-public class Agent2SkillExecutor {
+public class Agent2SkillExecutor implements AgentSkillExecutor {
     private final DashScopeClient dashScopeClient;
     private final ObjectMapper objectMapper;
 

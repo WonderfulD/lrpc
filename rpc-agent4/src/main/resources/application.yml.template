@@ -1,13 +1,13 @@
 server:
-  port: 18083
+  port: 18085
 
 spring:
   application:
-    name: rpc-agent2
+    name: rpc-agent4
 
 lrpc:
   provider:
-    port: 19083
+    port: 19085
   agent:
     enabled: true
     registry-base-url: http://localhost:18080
