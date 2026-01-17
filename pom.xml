@@ -10,17 +10,16 @@
     <packaging>pom</packaging>
     <modules>
         <module>rpc-framework</module>
-        <module>rpc-interface</module>
-        <module>rpc-consumer</module>
-        <module>rpc-provider</module>
-        <module>rpc-provider2</module>
+        <module>lrpc-demo/rpc-interface</module>
+        <module>lrpc-demo/rpc-consumer</module>
+        <module>lrpc-demo/rpc-provider</module>
+        <module>lrpc-demo/rpc-provider2</module>
         <module>agent-registry-service</module>
         <module>agent-discovery-service</module>
-        <module>rpc-agent-spring-boot-starter</module>
-        <module>rpc-agent1</module>
-        <module>rpc-agent2</module>
-        <module>rpc-agent3</module>
-        <module>rpc-agent4</module>
+        <module>a2a-demo/rpc-agent1</module>
+        <module>a2a-demo/rpc-agent2</module>
+        <module>a2a-demo/rpc-agent3</module>
+        <module>a2a-demo/rpc-agent4</module>
     </modules>
 
     <properties>

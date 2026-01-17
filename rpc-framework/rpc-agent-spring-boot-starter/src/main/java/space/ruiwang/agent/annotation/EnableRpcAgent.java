@@ -1,4 +1,4 @@
-package space.ruiwang.annotation;
+package space.ruiwang.agent.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,14 +7,10 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
-import space.ruiwang.AgentRpcProviderConfiguration;
+import space.ruiwang.agent.autoconfigure.RpcAgentAutoConfiguration;
 
-/**
- * Enable A2A provider support on top of LRPC provider.
- */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@EnableProviderRpc
-@Import(AgentRpcProviderConfiguration.class)
-public @interface EnableAgentProviderRpc {
+@Import(RpcAgentAutoConfiguration.class)
+public @interface EnableRpcAgent {
 }

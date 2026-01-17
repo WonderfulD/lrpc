@@ -5,11 +5,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.context.annotation.Import;
+
+import space.ruiwang.AgentRpcConsumerConfiguration;
+
 /**
  * Enable A2A consumer support on top of LRPC consumer.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @EnableConsumerRpc
+@Import(AgentRpcConsumerConfiguration.class)
 public @interface EnableAgentConsumerRpc {
 }
