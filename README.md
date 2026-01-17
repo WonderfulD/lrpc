@@ -128,4 +128,4 @@ public class TestController {
 
 - `rpc-agent-spring-boot-starter`: Agent 侧自动注册、心跳、健康检查的 Spring Boot Starter
 - AgentCard 配置方式：提供 `AgentCard` Bean；或在 `src/main/resources/agentcard.json` 放置配置文件（Bean 优先）
-- `rpc-agent1/2/3`: 三个示例 Agent（旅行规划/旅行信息/娱乐趋势）
+- `rpc-agent1/2/3/4`: 三个示例 Agent（旅行规划/旅行信息/娱乐趋势/阅读推荐）
