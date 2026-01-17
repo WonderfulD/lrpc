@@ -7,6 +7,8 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
+import space.ruiwang.loader.JobFactoryLoader;
+import space.ruiwang.loader.ServiceRegisterLoader;
 import space.ruiwang.processor.RpcServiceBeanPostProcessor;
 
 
@@ -16,7 +18,11 @@ import space.ruiwang.processor.RpcServiceBeanPostProcessor;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import(RpcServiceBeanPostProcessor.class)
+@Import({
+        RpcServiceBeanPostProcessor.class,
+        ServiceRegisterLoader.class,
+        JobFactoryLoader.class
+})
 public @interface EnableProviderRpc {
 
 }

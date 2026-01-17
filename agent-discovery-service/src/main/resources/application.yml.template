@@ -1,0 +1,42 @@
+server:
+  port: 18081
+
+spring:
+  application:
+    name: agent-discovery-service
+
+redis:
+  stack:
+    host: 127.0.0.1
+    port: 6379
+    username:
+    password:
+    database: 0
+    agent-index: agent_idx
+    skill-index: skill_idx
+    agent-key-prefix: "agent:"
+    skill-key-prefix: "skill:"
+    vector-dimension: 1536
+    distance-metric: COSINE
+    hnsw-m: 16
+    hnsw-ef-construction: 200
+
+dashscope:
+  api-key: ${API_KEY_DASH_SCOPE}
+  embedding-model: text-embedding-v2
+  chat-model: qwen-plus
+
+discovery:
+  agent-recall-top-k: 200
+  skill-recall-top-k: 200
+  coarse-top-k: 200
+  fine-top-k: 20
+  final-top-k: 10
+  max-skills-per-agent: 3
+  min-agent-recall: 5
+  agent-vector-distance-threshold: 0.6
+  skill-vector-distance-threshold: 0.6
+
+logging:
+  level:
+    space.ruiwang.service.AgentDiscoveryService: TRACE

@@ -35,6 +35,13 @@ build/
 .DS_Store
 
 # Configuration file
-rpc-consumer/src/main/resources/application.yml
-rpc-provider/src/main/resources/application.yml
-rpc-provider2/src/main/resources/application.yml
+**/application.yml
+
+# reference
+/reference
+
+# doc
+/doc
+
+# redis stack
+/.local

@@ -1,0 +1,29 @@
+# 服务器配置
+server:
+  port: 20001
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+
+# Spring配置
+spring:
+  application:
+    name: rpc-consumer-demo
+
+# Redis配置
+redis:
+  address: "redis://hostName:port"
+  password: "password"
+  database: 
+  connectionMinimumIdleSize: 5
+  connectionPoolSize: 15
+  connectTimeout: 10000
+  timeout: 5000
+  retryAttempts: 3
+  retryInterval: 1500
+
+# Nacos配置
+nacos:
+  server-addr: hostName:port

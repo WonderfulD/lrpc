@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import space.ruiwang.domain.RpcRequestDTO;
 import space.ruiwang.domain.RpcResponseDTO;
-import space.ruiwang.servicemanager.ServiceRegisterUtil;
+import space.ruiwang.servicemanager.ServiceMapHolder;
 import space.ruiwang.utils.InputStreamUtils;
 import space.ruiwang.utils.serializer.ProtobufSerializer;
 
@@ -37,7 +37,7 @@ public class HttpServletHandler {
 
             // 反射获取方法执行结果
             // 根据注解@RpcService来查找实现了serviceName接口的实现类对象
-            Object serviceClass = ServiceRegisterUtil.getService(serviceName);
+            Object serviceClass = ServiceMapHolder.getService(serviceName);
             Method method = serviceClass.getClass().getMethod(methodName, parameterTypes);
             Object result = method.invoke(serviceClass, parameters);
 

@@ -1,0 +1,66 @@
+// AgentCard template. Remove comments before using as agentcard.json.
+{
+  // Registry-assigned id; leave empty on first register.
+  "agentId": "",
+  // Active flag; registry manages this. Keep true or omit.
+  "active": true,
+  // Last modified timestamp; registry may overwrite.
+  "lastModifiedTime": "2026-01-01T00:00:00Z",
+
+  // Required: display name.
+  "name": "agent-name",
+  // Required: short description used for discovery.
+  "description": "Describe what this agent does.",
+  // Optional: semantic version.
+  "version": "1.0",
+  // Optional: documentation URL.
+  "documentationUrl": "https://example.com/agents/agent-name",
+
+  // Provider metadata.
+  "provider": {
+    // Required: organization/team name.
+    "organization": "my-org",
+    // Optional: organization URL.
+    "url": "https://example.com"
+  },
+
+  // Invocation endpoint.
+  "endpoint": {
+    // Required: base URL for calls.
+    "url": "http://localhost:18080/agent",
+    // Required: transport types, e.g. ["HTTP"] or ["HTTP","RPC"].
+    "transport": ["HTTP", "RPC"]
+  },
+
+  // Optional capabilities.
+  "capabilities": {
+    // Supports streaming responses.
+    "streaming": false
+  },
+
+  // Defaults applied when a skill omits input/output modes.
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+
+  // List of skills provided by this agent.
+  "skills": [
+    {
+      // Required: unique skill id within agent.
+      "id": "skill.id",
+      // Required: human-readable name.
+      "name": "skill-name",
+      // Required: short description.
+      "description": "What this skill does.",
+      // Optional: semantic version.
+      "version": "1.0",
+      // Optional: keywords for recall.
+      "tags": ["tag1", "tag2"],
+      // Optional: request content types.
+      "inputModes": ["application/json"],
+      // Optional: response content types.
+      "outputModes": ["application/json"],
+      // Optional: example inputs.
+      "examples": ["{\"foo\":\"bar\"}"]
+    }
+  ]
+}

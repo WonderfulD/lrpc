@@ -7,8 +7,10 @@ import javax.annotation.Resource;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 
 import lombok.extern.slf4j.Slf4j;
+import space.ruiwang.annotation.RpcAgentReference;
 import space.ruiwang.annotation.RpcReference;
 import space.ruiwang.domain.RpcRequestConfig;
 import space.ruiwang.proxy.ProxyAgent;
@@ -27,7 +29,19 @@ public class RpcReferenceBeanPostProcessor implements BeanPostProcessor {
         Class<?> beanClass = bean.getClass();
         // 检查类中的字段是否有 @RpcReference 注解
         for (Field field : beanClass.getDeclaredFields()) {
-            RpcReference rpcReference = field.getAnnotation(RpcReference.class);
+            RpcAgentReference agentReference = AnnotatedElementUtils.findMergedAnnotation(field, RpcAgentReference.class);
+            RpcReference rpcReference = AnnotatedElementUtils.findMergedAnnotation(field, RpcReference.class);
+            if (agentReference != null) {
+                Object proxy = proxyFactory.getAgentInvokeProxy(field.getType());
+                field.setAccessible(true);
+                try {
+                    field.set(bean, proxy);
+                    log.info("field: {} 注入成功，rpcAgentReference参数：{}", field.getName(), agentReference);
+                } catch (IllegalAccessException e) {
+                    log.error("field: {} 注入失败", field.getName(), e);
+                }
+                continue;
+            }
             if (rpcReference != null) {
                 String serviceVersion = rpcReference.serviceVersion();
                 String loadBalancerType = rpcReference.loadBalancer();

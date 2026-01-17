@@ -1,0 +1,102 @@
+// AgentCard template. Remove comments before using as agentcard.json.
+{
+  // Registry-assigned id; leave empty on first register.
+  "agentId": "",
+  // Active flag; registry manages this. Keep true or omit.
+  "active": true,
+  // Last modified timestamp; registry may overwrite.
+  "lastModifiedTime": "2026-01-01T00:00:00Z",
+
+  // Required: display name.
+  "name": "book-recommender",
+  // Required: short description used for discovery.
+  "description": "提供图书推荐与解读能力，涵盖热门图书、分类推荐、梗概与人物。",
+  // Optional: semantic version.
+  "version": "1.0",
+  // Optional: documentation URL.
+  "documentationUrl": "https://example.com/agents/book-recommender",
+
+  // Provider metadata.
+  "provider": {
+    // Required: organization/team name.
+    "organization": "lrpc-demo",
+    // Optional: organization URL.
+    "url": "https://example.com"
+  },
+
+  // Invocation endpoint.
+  "endpoint": {
+    // Required: base URL for calls.
+    "url": "http://localhost:18085/agent",
+    // Required: transport types, e.g. ["HTTP"] or ["HTTP","RPC"].
+    "transport": ["HTTP", "RPC"]
+  },
+
+  // Optional capabilities.
+  "capabilities": {
+    // Supports streaming responses.
+    "streaming": false
+  },
+
+  // Defaults applied when a skill omits input/output modes.
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+
+  // List of skills provided by this agent.
+  "skills": [
+    {
+      // Required: unique skill id within agent.
+      "id": "book.trending",
+      // Required: human-readable name.
+      "name": "book-trending",
+      // Required: short description.
+      "description": "查询近期热门图书榜单与推荐理由。",
+      // Optional: semantic version.
+      "version": "1.0",
+      // Optional: keywords for recall.
+      "tags": ["book", "trending", "recommend"],
+      // Optional: request content types.
+      "inputModes": ["application/json"],
+      // Optional: response content types.
+      "outputModes": ["application/json"],
+      // Optional: example inputs.
+      "examples": ["{\"region\":\"CN\",\"limit\":10}"]
+    },
+    {
+      // Required: unique skill id within agent.
+      "id": "book.recommend",
+      // Required: human-readable name.
+      "name": "book-recommend",
+      // Required: short description.
+      "description": "根据传入的类型/主题推荐图书。",
+      // Optional: semantic version.
+      "version": "1.0",
+      // Optional: keywords for recall.
+      "tags": ["book", "genre", "recommend"],
+      // Optional: request content types.
+      "inputModes": ["application/json"],
+      // Optional: response content types.
+      "outputModes": ["application/json"],
+      // Optional: example inputs.
+      "examples": ["{\"genre\":\"sci-fi\",\"count\":5}"]
+    },
+    {
+      // Required: unique skill id within agent.
+      "id": "book.summary",
+      // Required: human-readable name.
+      "name": "book-summary",
+      // Required: short description.
+      "description": "给出传入图书的故事梗概与主要人物。",
+      // Optional: semantic version.
+      "version": "1.0",
+      // Optional: keywords for recall.
+      "tags": ["book", "summary", "characters"],
+      // Optional: request content types.
+      "inputModes": ["application/json"],
+      // Optional: response content types.
+      "outputModes": ["application/json"],
+      // Optional: example inputs.
+      "examples": ["{\"title\":\"The Three-Body Problem\",\"author\":\"Liu Cixin\"}"]
+    }
+  ]
+}

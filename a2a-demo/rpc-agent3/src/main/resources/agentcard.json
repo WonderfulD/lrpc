@@ -1,0 +1,41 @@
+{
+  "name": "entertainment-trends",
+  "description": "提供热门音乐/电影榜单查询。",
+  "version": "1.0",
+  "documentationUrl": "https://example.com/agents/entertainment-trends",
+  "provider": {
+    "organization": "lrpc-demo",
+    "url": "https://example.com"
+  },
+  "endpoint": {
+    "url": "http://localhost:18084/agent",
+    "transport": ["HTTP", "RPC"]
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "music.trending",
+      "name": "music-trending",
+      "description": "查询近期热门音乐榜单。",
+      "version": "1.0",
+      "tags": ["music", "trending"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"region\":\"CN\"}"]
+    },
+    {
+      "id": "movie.trending",
+      "name": "movie-trending",
+      "description": "查询近期热门电影榜单。",
+      "version": "1.0",
+      "tags": ["movie", "trending"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": ["{\"region\":\"CN\"}"]
+    }
+  ]
+}
