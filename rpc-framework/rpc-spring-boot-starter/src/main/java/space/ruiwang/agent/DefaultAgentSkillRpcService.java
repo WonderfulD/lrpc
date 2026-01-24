@@ -1,4 +1,4 @@
-package space.ruiwang;
+package space.ruiwang.agent;
 
 import org.springframework.beans.factory.ObjectProvider;
 

@@ -7,10 +7,10 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
-import space.ruiwang.agent.autoconfigure.RpcAgentAutoConfiguration;
+import space.ruiwang.agent.autoconfigure.AgentAutoConfiguration;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import(RpcAgentAutoConfiguration.class)
-public @interface EnableRpcAgent {
+@Import(AgentAutoConfiguration.class)
+public @interface EnableAgent {
 }

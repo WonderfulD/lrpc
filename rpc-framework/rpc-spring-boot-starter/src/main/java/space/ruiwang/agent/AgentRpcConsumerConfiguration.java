@@ -1,4 +1,4 @@
-package space.ruiwang;
+package space.ruiwang.agent;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

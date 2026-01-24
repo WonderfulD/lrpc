@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
-import space.ruiwang.AgentRpcProviderConfiguration;
+import space.ruiwang.agent.AgentRpcProviderConfiguration;
 
 /**
  * Enable A2A provider support on top of LRPC provider.

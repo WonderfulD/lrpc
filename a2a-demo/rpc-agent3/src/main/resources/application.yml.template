@@ -20,3 +20,9 @@ dashscope:
   api-key: ${API_KEY_DASH_SCOPE}
   chat-model: qwen-plus
   timeout-seconds: 120
+
+# Nacos配置
+nacos:
+  server-addr: hostName:port
+  username:
+  password:

@@ -40,7 +40,7 @@ import space.ruiwang.domain.agent.invoke.AgentSkillInvoker;
 @EnableScheduling
 @EnableConfigurationProperties({RpcAgentProperties.class, DashScopeProperties.class})
 @ConditionalOnProperty(prefix = "lrpc.agent", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class RpcAgentAutoConfiguration {
+public class AgentAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean

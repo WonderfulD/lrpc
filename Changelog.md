@@ -25,6 +25,49 @@
 
 ---
 
+## [2.0.1] - 2026-01-25
+
+### 新增
+- 无
+
+### 变更
+- 移动了如下文件至`rpc-framework/rpc-spring-boot-starter/src/main/java/space/ruiwang/agent`
+  - AgentRpcConsumerConfiguration.java
+  - AgentRpcProviderConfiguration.java
+  - DefaultAgentSkillRpcService.java
+  - RpcAgentSkillInvoker.java
+- 更新了README
+- 更新了一些`application.yml.template`
+
+### 修复
+- 无
+
+### 其他
+- 无
+
+## [2.0.0] - 2026-01-23
+
+### 新增
+- 支持A2A
+  - 通过`agent-discovery-service`服务发现agent
+  - 通过`agent-registry-service`服务注册agent
+  - 通过agentcard.json或者声明agentcard Spring Bean来配置agentCard
+  - 默认使用HTTP端点（若agentCard中配置`endpoint.transport`包含`HTTP`），通过`endpoint.url`发起请求
+  - 支持使用LRPC框架进行rpc调用
+    - 引入`rpc-agent-spring-boot-starter` & `rpc-spring-boot-starter`
+    - agentCard中配置`endpoint.transport`包含`RPC`
+
+### 变更
+- 无
+
+### 修复
+- 无
+
+### 其他
+- 无
+
+---
+
 ## [1.0.0] - 2026-01-10
 
 ### 新增

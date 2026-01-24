@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
-import space.ruiwang.AgentRpcConsumerConfiguration;
+import space.ruiwang.agent.AgentRpcConsumerConfiguration;
 
 /**
  * Enable A2A consumer support on top of LRPC consumer.

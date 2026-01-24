@@ -27,8 +27,8 @@ redis:
 # Nacos配置
 nacos:
   server-addr: hostName:port
-  username: nacos
-  password: nacos
+  username:
+  password:
 
 # lrpc配置
 lrpc:

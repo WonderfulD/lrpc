@@ -1,4 +1,4 @@
-package space.ruiwang;
+package space.ruiwang.agent;
 
 import java.time.Duration;
 import java.util.List;
