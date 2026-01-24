@@ -491,9 +491,9 @@ dashscope:
 
 | 注解 | 说明 |
 |------|------|
-| `@EnableRpcAgent` | 启用 Agent 注册/发现能力 |
-| `@EnableAgentProviderRpc` | 启用 Agent RPC Provider（组合了 @EnableProviderRpc） |
-| `@EnableAgentConsumerRpc` | 启用 Agent RPC Consumer（组合了 @EnableConsumerRpc） |
+| `@EnableAgent` | 启用 Agent 注册/发现能力 |
+| `@EnableAgentProviderRpc` | 启用 Agent RPC Provider |
+| `@EnableAgentConsumerRpc` | 启用 Agent RPC Consumer |
 
 ---
 
